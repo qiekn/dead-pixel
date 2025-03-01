@@ -4,11 +4,16 @@
 #include <stdio.h>
 
 
-#define GLSL_VERSION 330
+#define PLATFORM_DESKTOP
+#if defined(PLATFORM_DESKTOP)
+    #define GLSL_VERSION            330
+#else
+    #define GLSL_VERSION            100
+#endif
 
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
-#define FPS 120
+#define FPS 60
 #define FIXED_DT (1.0f / FPS)
 
 #define CELL_SIZE 16
@@ -68,6 +73,7 @@ Vector2 rect_collision(Rectangle aabb, int level[LEVEL_HEIGHT][LEVEL_WIDTH]);
 
 
 int main(void) {
+    printf("%d\n", GLSL_VERSION);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     HideCursor();
     SetTargetFPS(FPS);
@@ -78,9 +84,7 @@ int main(void) {
     camera.rotation = 0.0f;
     camera.zoom = 1.0f;
 
-    Shader shader = LoadShader(0, TextFormat("src/resources/scanlines.fs", GLSL_VERSION));
-    /*int scanline_offset = GetShaderLocation(shader, "offset");*/
-    /*float elapsed_time = 0.0f;*/
+    Shader shader_scanlines = LoadShader(0, TextFormat("src/resources/shaders%i/scanlines.fs", GLSL_VERSION));
 
     RenderTexture2D target = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
 
@@ -210,7 +214,7 @@ int main(void) {
 
                 player.aabb.width = new_width;
 
-                if (input_dir.x < 0 && grow > 0 || input_dir.x > 0 && grow < 0) {
+                if ((input_dir.x < 0 && grow > 0) || (input_dir.x > 0 && grow < 0)) {
                     player.aabb.x -= grow_difference;
                 }
 
@@ -243,7 +247,7 @@ int main(void) {
 
                 player.aabb.height = new_height;
 
-                if (input_dir.y < 0 && grow > 0 || input_dir.y > 0 && grow < 0) {
+                if ((input_dir.y < 0 && grow > 0) || (input_dir.y > 0 && grow < 0)) {
                     player.aabb.y -= grow_difference;
                 }
 
@@ -269,8 +273,8 @@ int main(void) {
             }
 
             if (
-                player.jump_buffer_left > 0 && player.is_grounded ||
-                jump_pressed && player.coyote_time_left > 0
+                (player.jump_buffer_left > 0 && player.is_grounded) ||
+                (jump_pressed && player.coyote_time_left > 0)
             ) {
                 player.vel.y = player.max_jump_speed;
                 player.is_grounded = false;
@@ -333,10 +337,6 @@ int main(void) {
 
         sprintf(debug, "GROW: %d %d %lf %lf", player.grow_x_colliding, player.grow_y_colliding, player.last_grow_direction.x, player.last_grow_direction.y);
 
-
-        /*elapsed_time += FIXED_DT;*/
-        /*SetShaderValue(shader, scanline_offset, &elapsed_time, SHADER_UNIFORM_FLOAT);*/
-
         // Render to a texture for textures affected by postprocessing shaders
         BeginTextureMode(target);
             BeginMode2D(camera);
@@ -356,7 +356,6 @@ int main(void) {
                         DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
                     }
                 }
-
                 // Draw player
                 DrawRectangleRec(player.aabb, MAGENTA);
             EndMode2D();
@@ -364,7 +363,7 @@ int main(void) {
 
         BeginDrawing();
             ClearBackground(BLACK);
-            BeginShaderMode(shader);
+            BeginShaderMode(shader_scanlines);
                 DrawTextureRec(target.texture, (Rectangle){0, 0, (float)target.texture.width, (float)-target.texture.height}, (Vector2){0, 0}, WHITE);
             EndShaderMode();
             DrawFPS(0, 0);
@@ -374,7 +373,7 @@ int main(void) {
     }
 
     // De-Initialization
-    UnloadShader(shader);
+    UnloadShader(shader_scanlines);
     UnloadRenderTexture(target);
 
     CloseWindow();
