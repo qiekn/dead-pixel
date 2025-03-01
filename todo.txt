@@ -1,0 +1,18 @@
+- moving between screens in map
+- level editor
+
+- vignette -> magenta when shifting
+- checkpoints
+- water shader (wavy and scrolling texture)
+
+- particle system, simulated
+- glitch effect when hurt
+- collectable dead pixels -> Makes player turn white then fade back to magenta
+- reboot/restart sequence -> increase size
+
+- SFX and main music theme (TRON style)
+
+- obstacles
+- boids
+- fabrik tentacles
+- procedurally animated creatures
