@@ -148,6 +148,7 @@ int main(void) {
     Vector2 hit = {0};
 
     char keycode[50] = "KEYCODE: 0";
+    char debug[50] = "";
 
     while (!WindowShouldClose()) {
         int keycode_pressed = GetKeyPressed();
@@ -201,9 +202,10 @@ int main(void) {
                 int grow = player.grow_x_colliding ? -1 : 1;
                 player.last_grow_direction.x = input_dir.x;
 
+                float old_x = player.aabb.x;
                 float old_width = player.aabb.width;
                 float new_width = old_width + grow * player.grow_speed * FIXED_DT;
-                new_width = Clamp(new_width, MIN_PLAYER_SIZE, player.max_size);
+                new_width = Clamp(new_width, MIN_PLAYER_SIZE, player.max_size + CELL_SIZE);
                 float grow_difference = new_width - old_width;
 
                 player.aabb.width = new_width;
@@ -220,6 +222,11 @@ int main(void) {
                         player.aabb.x += grow_difference;
                     }
                 }
+
+                if (player.aabb.width > player.max_size) {
+                    player.aabb.width = old_width;
+                    player.aabb.x = old_x;
+                }
             }
             if (input_dir.y != 0) {
                 if (input_dir.y != player.last_grow_direction.y) {
@@ -228,9 +235,10 @@ int main(void) {
                 int grow = player.grow_y_colliding ? -1 : 1;
                 player.last_grow_direction.y = input_dir.y;
 
+                float old_y = player.aabb.y;
                 float old_height = player.aabb.height;
                 float new_height = old_height + grow * player.grow_speed * FIXED_DT;
-                new_height = Clamp(new_height, MIN_PLAYER_SIZE, player.max_size);
+                new_height = Clamp(new_height, MIN_PLAYER_SIZE, player.max_size + CELL_SIZE);
                 float grow_difference = new_height - old_height;
 
                 player.aabb.height = new_height;
@@ -246,6 +254,11 @@ int main(void) {
                     if (input_dir.y < 0) {
                         player.aabb.y += grow_difference;
                     }
+                }
+
+                if (player.aabb.height > player.max_size) {
+                    player.aabb.height = old_height;
+                    player.aabb.y = old_y;
                 }
             }
         } else {
@@ -318,6 +331,8 @@ int main(void) {
             }
         }
 
+        sprintf(debug, "GROW: %d %d %lf %lf", player.grow_x_colliding, player.grow_y_colliding, player.last_grow_direction.x, player.last_grow_direction.y);
+
 
         /*elapsed_time += FIXED_DT;*/
         /*SetShaderValue(shader, scanline_offset, &elapsed_time, SHADER_UNIFORM_FLOAT);*/
@@ -354,6 +369,7 @@ int main(void) {
             EndShaderMode();
             DrawFPS(0, 0);
             DrawText(keycode, 0, 20, 20, GREEN);
+            DrawText(debug, 0, 40, 20, GREEN);
         EndDrawing();
     }
 
