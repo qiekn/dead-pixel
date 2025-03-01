@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-#define PLATFORM_DESKTOP
+/*#define PLATFORM_DESKTOP*/
 #if defined(PLATFORM_DESKTOP)
     #define GLSL_VERSION 330
 #else
@@ -24,7 +24,7 @@
 
 const Vector2 WINDOW_CENTRE = (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f};
 const float SMOL = 0.01f;
-const float MIN_PLAYER_SIZE = CELL_SIZE - 1.0f;
+const float MIN_PLAYER_SIZE = CELL_SIZE - 4.0f;
 
 
 typedef enum {
@@ -39,6 +39,7 @@ typedef enum {
 typedef enum {
     EMPTY,
     SOLID,
+    WATER,
 } CellType;
 
 typedef struct {
@@ -85,7 +86,10 @@ int main(void) {
     camera.zoom = 1.0f;
 
     Shader shader_scanlines = LoadShader(0, TextFormat("src/resources/shaders%i/scanlines.fs", GLSL_VERSION));
+    Shader shader_blur = LoadShader(0, TextFormat("src/resources/shaders%i/blur.fs", GLSL_VERSION));
+
     RenderTexture2D target = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
+    RenderTexture2D target_world = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     // Load level from file
     FILE* file_ptr = fopen("src/resources/level.txt", "r");
@@ -121,14 +125,14 @@ int main(void) {
     player.keybinds[B] = 88;
     player.aabb = (Rectangle){
         WINDOW_CENTRE.x, WINDOW_CENTRE.y,
-        CELL_SIZE * 4.0f, CELL_SIZE * 4.0f
+        CELL_SIZE * 4.0f - 1.0f, CELL_SIZE * 4.0f - 1.0f
     };
     player.vel = Vector2Zero();
     player.max_vel = (Vector2){200.0f, 400.0f};
     player.min_vel = Vector2Negate(player.max_vel);
     player.last_grow_direction = Vector2Zero();
     player.max_size = CELL_SIZE * 8.0f - 1.0f;
-    player.grow_speed = 100.0f;
+    player.grow_speed = 200.0f;
     player.speed = 800.0f;
     player.friction = 0.00001f;  // Between 0 - 1, higher means lower friction
     float min_jump = CELL_SIZE * 1.5f;
@@ -334,7 +338,14 @@ int main(void) {
         BeginTextureMode(target);
             BeginMode2D(camera);
                 ClearBackground(BLACK);
+                // Draw player
+                DrawRectangleRec(player.aabb, MAGENTA);
+            EndMode2D();
+        EndTextureMode();
 
+        BeginTextureMode(target_world);
+            ClearBackground(BLACK);
+            BeginMode2D(camera);
                 // Draw level
                 for (int y = 0; y < LEVEL_HEIGHT; y++) {
                     for (int x = 0; x < LEVEL_WIDTH; x++) {
@@ -346,16 +357,21 @@ int main(void) {
                             CELL_SIZE,
                             CELL_SIZE
                         };
-                        DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
+                        if (cell_type == SOLID) {
+                            DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
+                        } else if (cell_type == WATER) {
+                            DrawRectangleRec(cell_rect, GREEN);
+                        }
                     }
                 }
-                // Draw player
-                DrawRectangleRec(player.aabb, MAGENTA);
             EndMode2D();
         EndTextureMode();
 
         BeginDrawing();
             ClearBackground(BLACK);
+            BeginShaderMode(shader_blur);
+                DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+            EndShaderMode();
             BeginShaderMode(shader_scanlines);
                 DrawTextureRec(target.texture, (Rectangle){0, 0, (float)target.texture.width, (float)-target.texture.height}, (Vector2){0, 0}, WHITE);
             EndShaderMode();
