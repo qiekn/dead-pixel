@@ -1,0 +1,45 @@
+UTS Playmakers Game Jam March 2025
+1st of March 2025, 12:00PM - 8th of March 2025, 7:30PM
+
+Theme: RESTART
+Definition: start again, a new start or beginning.
+
+Judging Criteria:
+	Enjoyment - Is the game fun?
+	Creativity - How uniquely has the theme been implemented?
+	Presentation - How polished is the game?
+
+IDEAS:
+- Any roguelike game (maybe with progression)
+- Puzzle game with persistent objects
+- Music related, stop, play, restart
+- Nature related -> restart lifecycle
+- Groundhog day
+- Undead flesh monster like Gish or Dead Cells
+- Restarting of a computer
+
+CHOSEN IDEA - DEAD PIXEL
+You play as a dead pixel on a computer screen. Puzzle platformer where you
+stretch your body to navigate a world and collect more dead pixels to be able
+to grow to larger sizes. Whenever you collect pixels the game is 'restarted'
+and you are sent back to the first screen but can now expand to larger sizes so
+you now have the ability to navigate more of the map. End of game is that you
+have enough dead pixels to fill the screen, and then fake blue screen.
+
+FEATURES:
+- Platformer player movement
+- Player stretching/grabbing
+- Level loading from file
+- CRT, Fisheye distort, glitch and vignette shaders
+
+ART:
+- Rects
+- Water shader
+- Retro pixel art font
+
+SHADER REFERENCES:
+https://www.shadertoy.com/view/4dXBW2
+https://www.shadertoy.com/view/MlfSWr
+https://www.shadertoy.com/view/lsKSWR
+https://github.com/raysan5/raylib/blob/master/examples/shaders/resources/shaders/glsl100/scanlines.fs
+
