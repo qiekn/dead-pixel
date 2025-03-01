@@ -6,9 +6,9 @@
 
 #define PLATFORM_DESKTOP
 #if defined(PLATFORM_DESKTOP)
-    #define GLSL_VERSION            330
+    #define GLSL_VERSION 330
 #else
-    #define GLSL_VERSION            100
+    #define GLSL_VERSION 100
 #endif
 
 #define WINDOW_WIDTH 1280
@@ -85,7 +85,6 @@ int main(void) {
     camera.zoom = 1.0f;
 
     Shader shader_scanlines = LoadShader(0, TextFormat("src/resources/shaders%i/scanlines.fs", GLSL_VERSION));
-
     RenderTexture2D target = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     // Load level from file
@@ -151,13 +150,7 @@ int main(void) {
 
     Vector2 hit = {0};
 
-    char keycode[50] = "KEYCODE: 0";
-    char debug[50] = "";
-
     while (!WindowShouldClose()) {
-        int keycode_pressed = GetKeyPressed();
-        if (keycode_pressed) sprintf(keycode, "KEYCODE: %d", keycode_pressed);
-
         bool jump_pressed = IsKeyPressed(player.keybinds[A]);
         bool jump_held = IsKeyDown(player.keybinds[A]);
         bool shift_pressed = IsKeyPressed(player.keybinds[B]);
@@ -200,6 +193,7 @@ int main(void) {
         if (shift_held) {
             player.vel = Vector2Zero();
             if (input_dir.x != 0) {
+                player.grow_y_colliding = false;
                 if (input_dir.x != player.last_grow_direction.x) {
                     player.grow_x_colliding = false;
                 }
@@ -233,6 +227,7 @@ int main(void) {
                 }
             }
             if (input_dir.y != 0) {
+                player.grow_x_colliding = false;
                 if (input_dir.y != player.last_grow_direction.y) {
                     player.grow_y_colliding = false;
                 }
@@ -335,8 +330,6 @@ int main(void) {
             }
         }
 
-        sprintf(debug, "GROW: %d %d %lf %lf", player.grow_x_colliding, player.grow_y_colliding, player.last_grow_direction.x, player.last_grow_direction.y);
-
         // Render to a texture for textures affected by postprocessing shaders
         BeginTextureMode(target);
             BeginMode2D(camera);
@@ -366,9 +359,7 @@ int main(void) {
             BeginShaderMode(shader_scanlines);
                 DrawTextureRec(target.texture, (Rectangle){0, 0, (float)target.texture.width, (float)-target.texture.height}, (Vector2){0, 0}, WHITE);
             EndShaderMode();
-            DrawFPS(0, 0);
-            DrawText(keycode, 0, 20, 20, GREEN);
-            DrawText(debug, 0, 40, 20, GREEN);
+            /*DrawFPS(0, 0);*/
         EndDrawing();
     }
 
