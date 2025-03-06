@@ -19,23 +19,24 @@ IDEAS:
 - Restarting of a computer
 
 CHOSEN IDEA - DEAD PIXEL
+
+ACTUAL PLAN:
+You play as a dead pixel on a computer screen. Puzzle platformer where you
+stretch your body to navigate a digital world. You are on a strict timelimit
+and everytime it runs out the game restarts... however, you retain your
+collectables in the form of bugs (boids that fly around the map avoiding you)
+which can be spent in an upgrade shop to increase one of three stats, time,
+length and width. These stats once upgraded will allow you to explore the map
+and once every stat is upgraded to the maximum you can finish the game with a
+secret ending :)) crashing the computer.
+
+INITIAL PLAN:
 You play as a dead pixel on a computer screen. Puzzle platformer where you
 stretch your body to navigate a world and collect more dead pixels to be able
 to grow to larger sizes. Whenever you collect pixels the game is 'restarted'
 and you are sent back to the first screen but can now expand to larger sizes so
 you now have the ability to navigate more of the map. End of game is that you
 have enough dead pixels to fill the screen, and then fake blue screen.
-
-FEATURES:
-- Platformer player movement
-- Player stretching/grabbing
-- Level loading from file
-- CRT, Fisheye distort, glitch and vignette shaders
-
-ART:
-- Rects
-- Water shader
-- Retro pixel art font
 
 SHADER REFERENCES:
 https://www.shadertoy.com/view/4dXBW2
