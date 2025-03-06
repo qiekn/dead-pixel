@@ -44,3 +44,5 @@ https://www.shadertoy.com/view/MlfSWr
 https://www.shadertoy.com/view/lsKSWR
 https://github.com/raysan5/raylib/blob/master/examples/shaders/resources/shaders/glsl100/scanlines.fs
 
+MUSIC REFERENCE:
+https://soundcloud.com/funkfest/tron-legacy-son-of-flynn-remix

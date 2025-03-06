@@ -27,6 +27,7 @@ const float SMOL = 0.01f;
 const float MIN_PLAYER_SIZE = CELL_SIZE - 4.0f;
 
 
+// TODO: Add restart R, change to wasd jk r
 typedef enum {
     RIGHT,
     LEFT,
@@ -39,9 +40,11 @@ typedef enum {
 typedef enum {
     EMPTY,
     SOLID,
-    WATER,
+    WATER, // TODO: Remove
 } CellType;
 
+// TODO: Store max width and max height separately
+// Store collected bugs
 typedef struct {
     int keybinds[MAX_KEYBINDS];
     Rectangle aabb;
@@ -74,16 +77,13 @@ Vector2 rect_collision(Rectangle aabb, int level[LEVEL_HEIGHT][LEVEL_WIDTH]);
 
 
 int main(void) {
-    printf("%d\n", GLSL_VERSION);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
+    InitAudioDevice();
     HideCursor();
     SetTargetFPS(FPS);
 
-    Camera2D camera = {};
-    camera.target = Vector2Zero();
-    camera.offset = Vector2Zero();
-    camera.rotation = 0.0f;
-    camera.zoom = 1.0f;
+    Music music = LoadMusicStream("src/resources/Tron Legacy - Son of Flynn (Remix).mp3");
+    PlayMusicStream(music);
 
     Shader shader_scanlines = LoadShader(0, TextFormat("src/resources/shaders%i/scanlines.fs", GLSL_VERSION));
     Shader shader_blur = LoadShader(0, TextFormat("src/resources/shaders%i/blur.fs", GLSL_VERSION));
@@ -115,6 +115,12 @@ int main(void) {
     }
 
     fclose(file_ptr);
+
+    Camera2D camera = {};
+    camera.target = Vector2Zero();
+    camera.offset = Vector2Zero();
+    camera.rotation = 0.0f;
+    camera.zoom = 1.0f;
 
     Player player = {0};
     player.keybinds[RIGHT] = 262;
@@ -155,6 +161,8 @@ int main(void) {
     Vector2 hit = {0};
 
     while (!WindowShouldClose()) {
+        UpdateMusicStream(music);
+
         bool jump_pressed = IsKeyPressed(player.keybinds[A]);
         bool jump_held = IsKeyDown(player.keybinds[A]);
         bool shift_pressed = IsKeyPressed(player.keybinds[B]);
@@ -382,6 +390,8 @@ int main(void) {
     // De-Initialization
     UnloadShader(shader_scanlines);
     UnloadRenderTexture(target);
+    UnloadMusicStream(music);
+    CloseAudioDevice();
 
     CloseWindow();
 }
