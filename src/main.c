@@ -82,7 +82,7 @@ int main(void) {
     HideCursor();
     SetTargetFPS(FPS);
 
-    Music music = LoadMusicStream("src/resources/Tron Legacy - Son of Flynn (Remix).mp3");
+    Music music = LoadMusicStream("src/resources/Tron Legacy - Son of Flynn (Remix).ogg");
     PlayMusicStream(music);
 
     Shader shader_scanlines = LoadShader(0, TextFormat("src/resources/shaders%i/scanlines.fs", GLSL_VERSION));
