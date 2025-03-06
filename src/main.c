@@ -4,7 +4,7 @@
 #include <stdio.h>
 
 
-/*#define PLATFORM_DESKTOP*/
+#define PLATFORM_DESKTOP
 #if defined(PLATFORM_DESKTOP)
     #define GLSL_VERSION 330
 #else
