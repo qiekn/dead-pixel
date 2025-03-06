@@ -1,18 +1,13 @@
+- level editor (using aseprite, so just need a png -> lvl file script)
+- level design
 - moving between screens in map
-- level editor
+- boids that act as the collectables (ones that respawn and ones that don't)
 
-- vignette -> magenta when shifting
-- checkpoints
-- water shader (wavy and scrolling texture)
+- vignette shader (can set colour) -> cyan when shifting
+- glitch effect shader (is effected by time)
 
-- particle system, simulated
-- glitch effect when hurt
-- collectable dead pixels -> Makes player turn white then fade back to magenta
-- reboot/restart sequence -> increase size
+- upgrade screen
+- reboot/restart sequence
+- gameover sequence
 
 - SFX and main music theme (TRON style)
-
-- obstacles
-- boids
-- fabrik tentacles
-- procedurally animated creatures
