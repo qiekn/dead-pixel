@@ -50,8 +50,8 @@ typedef struct {
 } Player;
 
 
-void player_update(Player *player, int level[LEVEL_HEIGHT][LEVEL_WIDTH]);
-Vector2 rect_collision(Rectangle aabb, int level[LEVEL_HEIGHT][LEVEL_WIDTH]);
+void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]);
+Vector2 rect_collision(Rectangle aabb, int level[MAP_HEIGHT][MAP_WIDTH]);
 
 
 #endif  /* PLAYER_H */

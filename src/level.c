@@ -3,8 +3,8 @@
 #include "settings.h"
 
 
-bool load_level(int level[LEVEL_HEIGHT][LEVEL_WIDTH]) {
-    FILE* file_ptr = fopen("src/resources/level.txt", "r");
+bool load_level(int level[MAP_HEIGHT][MAP_WIDTH]) {
+    FILE* file_ptr = fopen("src/resources/map.txt", "r");
 
     if (file_ptr == NULL) {
         printf("ERROR: Could not open file!\n");
@@ -15,10 +15,10 @@ bool load_level(int level[LEVEL_HEIGHT][LEVEL_WIDTH]) {
     int x = 0;
     int y = 0;
     int cell_type;
-    while (fscanf(file_ptr, "%d", &cell_type) == 1 && y < LEVEL_HEIGHT) {
+    while (fscanf(file_ptr, "%d", &cell_type) == 1 && y < MAP_HEIGHT) {
         level[y][x] = cell_type;
         x++;
-        if (fgetc(file_ptr) == '\n' || x >= LEVEL_WIDTH) {
+        if (fgetc(file_ptr) == '\n' || x >= MAP_WIDTH) {
             x = 0;
             y++;
         }
@@ -29,6 +29,6 @@ bool load_level(int level[LEVEL_HEIGHT][LEVEL_WIDTH]) {
 }
 
 
-bool inside_level(int x, int y) {
-    return (x >= 0 && x < LEVEL_WIDTH && y >= 0 && y < LEVEL_HEIGHT);
+bool inside_map(int x, int y) {
+    return (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT);
 }

@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <stdbool.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "player.h"
 #include "level.h"
@@ -11,6 +12,7 @@ const Vector2 WINDOW_CENTRE = (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.
 
 
 int main(void) {
+    printf("%d, %d\n", MAP_WIDTH, MAP_HEIGHT);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
     HideCursor();
@@ -25,7 +27,8 @@ int main(void) {
     RenderTexture2D target_entities = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
     RenderTexture2D target_world = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    int level[LEVEL_HEIGHT][LEVEL_WIDTH] = {0};
+    /*int (*level)[MAP_HEIGHT][MAP_WIDTH] = malloc(sizeof(int) * MAP_WIDTH * MAP_HEIGHT);*/
+    int level[MAP_HEIGHT][MAP_WIDTH] = {0};
     if (!load_level(level)) return 1;
 
     Camera2D camera = {};
@@ -84,6 +87,29 @@ int main(void) {
 
         player_update(&player, level);
 
+        Vector2 player_centre = (Vector2) {
+            player.aabb.x + player.aabb.width / 2,
+            player.aabb.y + player.aabb.height / 2
+        };
+
+        Vector2 level_offset = (Vector2) {
+            (int)(player_centre.x / WINDOW_WIDTH),
+            (int)(player_centre.y / WINDOW_HEIGHT)
+        };
+
+        Vector2 render_offset = (Vector2) {
+            level_offset.x * LEVEL_WIDTH,
+            level_offset.y * LEVEL_HEIGHT
+        };
+
+        Vector2 camera_offset = (Vector2) {
+            level_offset.x * WINDOW_WIDTH,
+            level_offset.y * WINDOW_HEIGHT
+        };
+
+        camera.target = camera_offset;
+        printf("%lf\n", level_offset.x);
+
         // Render to a texture for textures affected by postprocessing shaders
         BeginTextureMode(target_entities);
             BeginMode2D(camera);
@@ -95,24 +121,22 @@ int main(void) {
 
         BeginTextureMode(target_world);
             ClearBackground(BLACK);
-            BeginMode2D(camera);
-                // Draw level
-                for (int y = 0; y < LEVEL_HEIGHT; y++) {
-                    for (int x = 0; x < LEVEL_WIDTH; x++) {
-                        int cell_type = level[y][x];
-                        if (cell_type == EMPTY) continue;
-                        Rectangle cell_rect = {
-                            x * CELL_SIZE,
-                            y * CELL_SIZE,
-                            CELL_SIZE,
-                            CELL_SIZE
-                        };
-                        if (cell_type == SOLID) {
-                            DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
-                        }
+            // Draw level
+            for (int y = 0; y < LEVEL_HEIGHT; y++) {
+                for (int x = 0; x < LEVEL_WIDTH; x++) {
+                    int cell_type = level[(int)(y + render_offset.y)][(int)(x + render_offset.x)];
+                    if (cell_type == EMPTY) continue;
+                    Rectangle cell_rect = {
+                        x * CELL_SIZE,
+                        y * CELL_SIZE,
+                        CELL_SIZE,
+                        CELL_SIZE
+                    };
+                    if (cell_type == SOLID) {
+                        DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
                     }
                 }
-            EndMode2D();
+            }
         EndTextureMode();
 
         BeginDrawing();
@@ -123,7 +147,7 @@ int main(void) {
             BeginShaderMode(shader_scanlines);
                 DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
             EndShaderMode();
-            /*DrawFPS(0, 0);*/
+            DrawFPS(0, 0);
             DrawText(keycode, 0, 20, 20, WHITE);
         EndDrawing();
     }
@@ -136,4 +160,3 @@ int main(void) {
 
     CloseWindow();
 }
-

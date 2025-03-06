@@ -5,7 +5,7 @@
 #include "level.h"
 
 
-void player_update(Player *player, int level[LEVEL_HEIGHT][LEVEL_WIDTH]) {
+void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
     bool jump_pressed = IsKeyPressed(player->keybinds[A]);
     bool jump_held = IsKeyDown(player->keybinds[A]);
     bool shift_pressed = IsKeyPressed(player->keybinds[B]);
@@ -186,14 +186,14 @@ void player_update(Player *player, int level[LEVEL_HEIGHT][LEVEL_WIDTH]) {
     }
 }
 
-Vector2 rect_collision(Rectangle aabb, int level[LEVEL_HEIGHT][LEVEL_WIDTH]) {
+Vector2 rect_collision(Rectangle aabb, int level[MAP_HEIGHT][MAP_WIDTH]) {
     float top_left_x = aabb.x / CELL_SIZE;
     float bottom_right_x = (aabb.x + aabb.width) / CELL_SIZE;
     float top_left_y = aabb.y / CELL_SIZE;
     float bottom_right_y = (aabb.y + aabb.height) / CELL_SIZE;
     for (int y = top_left_y; y <= bottom_right_y; y++) {
         for (int x = top_left_x; x <= bottom_right_x; x++) {
-            if (!inside_level(x, y)) continue;
+            if (!inside_map(x, y)) continue;
             int cell_type = level[y][x];
             if (cell_type == EMPTY) continue;
             return (Vector2) {x, y};
