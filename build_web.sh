@@ -11,7 +11,7 @@ mkdir -p web
 # NOTE:
 # Can remove -s ASYNCIFY if there is no while(!WindowShouldClose()) loop
 # --preload-file src/resources must be added if you want to load assets
-emcc -o web/game.html src/main.c -Os -Wall $HOME/raylib/src/web/libraylib.web.a \
+emcc -o web/game.html src/main.c src/player.c src/level.c -Os -Wall $HOME/raylib/src/web/libraylib.web.a \
 	-I. -I$HOME/raylib/src -L. -L$HOME/raylib/src/web \
 	-s USE_GLFW=3 \
 	-s ASYNCIFY \
