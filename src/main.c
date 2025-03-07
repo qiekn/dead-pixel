@@ -10,6 +10,9 @@
 
 
 #define CYAN (Color) {0, 255, 255, 255}
+#define WALL_COLOUR (Color) {90, 150, 255, 255}
+#define BOID_COLOUR (Color) {120, 255, 80, 150}
+
 #define WINDOW_CENTRE (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f}
 
 void restart(Player *player, Boid *boids, int *link_heads);
@@ -31,6 +34,8 @@ int main(void) {
 
     Shader shader_scanlines = LoadShader(0, TextFormat("src/resources/shaders%i/scanlines.fs", GLSL_VERSION));
     Shader shader_blur = LoadShader(0, TextFormat("src/resources/shaders%i/blur.fs", GLSL_VERSION));
+    Shader shader_glitch = LoadShader(0, TextFormat("src/resources/shaders%i/glitch.fs", GLSL_VERSION));
+    int timeLoc = GetShaderLocation(shader_glitch, "time");
 
     RenderTexture2D target_entities = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
     RenderTexture2D target_world = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
@@ -101,6 +106,8 @@ int main(void) {
     char timer[50] = "TIME REMAINING: 0";
 
     while (!WindowShouldClose()) {
+        float time = GetTime();
+        SetShaderValue(shader_glitch, timeLoc, &time, SHADER_UNIFORM_FLOAT);
         UpdateMusicStream(music);
 
         // Update
@@ -161,7 +168,7 @@ int main(void) {
                         Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)),
                         (Vector2) {boids[i].position.x - BOID_SIZE, boids[i].position.y + BOID_SIZE},
                         (Vector2) {boids[i].position.x + BOID_SIZE, boids[i].position.y + BOID_SIZE},
-                        GREEN
+                        BOID_COLOUR
                     );
                 }
 
@@ -189,16 +196,22 @@ int main(void) {
                         CELL_SIZE,
                         CELL_SIZE
                     };
-                    DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
+                    DrawRectangleLinesEx(cell_rect, 2.0f, WALL_COLOUR);
                 }
             }
         EndTextureMode();
 
         BeginDrawing();
             ClearBackground(BLACK);
-            BeginShaderMode(shader_blur);
-                DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
-            EndShaderMode();
+            if (player.time_remaining < TIME_REMAINING_GLITCH) {
+                BeginShaderMode(shader_glitch);
+                    DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                EndShaderMode();
+            } else {
+                BeginShaderMode(shader_blur);
+                    DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                EndShaderMode();
+            }
             BeginShaderMode(shader_scanlines);
                 DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
             EndShaderMode();

@@ -8,10 +8,10 @@
 
 
 static const int NUM_BOIDS = 2048 * 4;
-static const int BOID_SIZE = 4;
+static const float BOID_SIZE = 5;
 static const int VIEW_DISTANCE = 64;
 static const int VIEW_DISTANCE_SQR = (VIEW_DISTANCE * VIEW_DISTANCE);
-static const int AVOID_DISTANCE = 10;
+static const int AVOID_DISTANCE = 7;
 static const int AVOID_DISTANCE_SQR = (AVOID_DISTANCE * AVOID_DISTANCE);
 static const float VIEW_DOT_PRODUCT = -0.6;
 static const float SEPARATION_CONSTANT = 0.3;

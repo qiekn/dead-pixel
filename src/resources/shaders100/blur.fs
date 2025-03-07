@@ -22,10 +22,10 @@ void main()
     vec3 tc = texture2D(texture0, fragTexCoord).rgb*weight.x;
 
     tc += texture2D(texture0, fragTexCoord + vec2(offset.y)/renderWidth, 0.0).rgb*weight.y;
-    tc += texture2D(texture0, fragTexCoord - vec2(offset.y)/renderWidth, 0.0).rgb*weight.y;
+    tc += texture2D(texture0, fragTexCoord - vec2(offset.y)/renderHeight, 0.0).rgb*weight.y;
 
     tc += texture2D(texture0, fragTexCoord + vec2(offset.z)/renderWidth, 0.0).rgb*weight.z;
-    tc += texture2D(texture0, fragTexCoord - vec2(offset.z)/renderWidth, 0.0).rgb*weight.z;
+    tc += texture2D(texture0, fragTexCoord - vec2(offset.z)/renderHeight, 0.0).rgb*weight.z;
 
     gl_FragColor = vec4(tc, 1.0);
 }

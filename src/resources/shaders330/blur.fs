@@ -14,19 +14,14 @@ out vec4 finalColor;
 const float renderWidth = 1280;
 const float renderHeight = 720;
 
-float offset[3] = float[](1.222, 1.3846153846, 3.2307692308);
-float weight[3] = float[](0.5270270270, 0.5162162162, 0.4702702703);
-
 void main()
 {
     // Texel color fetching from texture sampler
-    vec3 texelColor = texture(texture0, fragTexCoord).rgb*weight[0];
+    vec3 texelColor = texture(texture0, fragTexCoord).rgb;
 
-    for (int i = 1; i < 3; i++)
-    {
-        texelColor += texture(texture0, fragTexCoord + vec2(offset[i])/renderWidth, 0.0).rgb*weight[i];
-        texelColor += texture(texture0, fragTexCoord - vec2(offset[i])/renderWidth, 0.0).rgb*weight[i];
-    }
+    texelColor.r = texture(texture0, fragTexCoord + vec2(-3, 0.1)/renderWidth, 0.0).r;
+    texelColor.g = texture(texture0, fragTexCoord + vec2(4, -0.1)/renderWidth, 0.0).g;
+    texelColor.b = texture(texture0, fragTexCoord + vec2(-1, 0.3)/renderWidth, 0.0).b;
 
     finalColor = vec4(texelColor, 1.0);
 }
