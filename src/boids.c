@@ -1,3 +1,5 @@
+#include <math.h>
+#include <stdbool.h>
 #include "raylib.h"
 #include "raymath.h"
 #include "boids.h"
@@ -23,7 +25,7 @@ void setup_linked_list(Boid *boids, int *link_heads) {
             GetRandomValue(-64, 64),
             GetRandomValue(-64, 64)
         });
-        boids[i] = (Boid) {position, direction, -1};
+        boids[i] = (Boid) {position, direction, -1, false};
 
         int x_grid = (int) position.x / GRID_SIZE;
         x_grid = Wrap(x_grid, 0, GRID_WIDTH);
@@ -132,87 +134,85 @@ void update_boids(
         }
     }
 
-    Vector2 player_pos = (Vector2) {player->aabb.x + player->aabb.width / 2, player->aabb.y + player->aabb.height / 2};
-    float largest_dimension = player->aabb.width;
-    if (player->aabb.height > largest_dimension) largest_dimension = player->aabb.height;
-    largest_dimension *= PLAYER_AVOID_FACTOR;
-
-    // Move the boids
-    for (int i = 0; i < NUM_BOIDS; i++) {
-        // Separation
-        Vector2 separation = Vector2Scale(Vector2Normalize(Vector2Subtract(average_separations[i], boids[i].direction)), -SEPARATION_CONSTANT);
-
-        // Alignment
-        Vector2 alignment = Vector2Scale(Vector2Normalize(Vector2Subtract(average_directions[i], boids[i].direction)), ALIGNMENT_CONSTANT);
-
-        // Cohension
-        Vector2 cohesion = Vector2Scale(Vector2Normalize(Vector2Subtract(average_positions[i], boids[i].position)), COHESION_CONSTANT);
-
-        // Avoidance
-        float distance_sqr = Vector2DistanceSqr(boids[i].position, player_pos);
-        float distance = Vector2Distance(boids[i].position, player_pos);
-        Vector2 avoidance = Vector2Zero();
-        if (distance < largest_dimension) {
-            avoidance = Vector2Scale(Vector2Subtract(boids[i].position, player_pos), 1.0f / distance_sqr * AVOIDANCE_CONSTANT);
-        }
-
-        boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, separation));
-        boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, alignment));
-        boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, cohesion));
-        boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, avoidance));
-
-        // Update position
-        boids[i].position = Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, MOVE_SPEED * FIXED_DT));
-
-        boids[i].position.x = Wrap(boids[i].position.x, 0, WORLD_WIDTH);
-        boids[i].position.y = Wrap(boids[i].position.y, 0, WORLD_HEIGHT);
-    }
+    Vector2 player_centre_pos = (Vector2) {player->aabb.x + player->aabb.width / 2, player->aabb.y + player->aabb.height / 2};
+    Vector2 collection_distance = (Vector2) {player->aabb.width / 2, player->aabb.height / 2};
+    Vector2 escape_distance = Vector2AddValue(collection_distance, PLAYER_AVOID_BUFFER);
 
     // Update boids linked list
-    for (int i = 0; i < GRID_CELLS; i++) {
-        if (link_heads[i] == -1) continue;
+    for (int cell = 0; cell < GRID_CELLS; cell++) {
+        if (link_heads[cell] == -1) continue;
 
         int last = -1;
-        int current = link_heads[i];
-        while (current != -1) {
-            int x_grid = (int) boids[current].position.x / GRID_SIZE;
+        int i = link_heads[cell];
+        while (i != -1) {
+            // Move boids
+            // Separation
+            Vector2 separation = Vector2Scale(Vector2Normalize(Vector2Subtract(average_separations[i], boids[i].direction)), -SEPARATION_CONSTANT);
+
+            // Alignment
+            Vector2 alignment = Vector2Scale(Vector2Normalize(Vector2Subtract(average_directions[i], boids[i].direction)), ALIGNMENT_CONSTANT);
+
+            // Cohension
+            Vector2 cohesion = Vector2Scale(Vector2Normalize(Vector2Subtract(average_positions[i], boids[i].position)), COHESION_CONSTANT);
+
+            // Avoidance
+            Vector2 avoidance = Vector2Zero();
+            Vector2 distance = Vector2Subtract(boids[i].position, player_centre_pos);
+            if (fabs(distance.x) < escape_distance.x && fabs(distance.y) < escape_distance.y) {
+                avoidance = Vector2Scale(distance, AVOIDANCE_CONSTANT);
+                if (fabs(distance.x) < collection_distance.x && fabs(distance.y) < collection_distance.y) {
+                    boids[i].eaten = true;
+                    player->is_eating = true;
+                    player->bugs_collected++;
+                    // TODO: Instantiate particle here
+                }
+            }
+
+            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, separation));
+            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, alignment));
+            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, cohesion));
+            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, avoidance));
+
+            // Update position
+            boids[i].position = Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, MOVE_SPEED * FIXED_DT));
+
+            boids[i].position.x = Wrap(boids[i].position.x, 0, WORLD_WIDTH);
+            boids[i].position.y = Wrap(boids[i].position.y, 0, WORLD_HEIGHT);
+
+            // Does this boid need to move cells?
+            int x_grid = (int) boids[i].position.x / GRID_SIZE;
             x_grid = Wrap(x_grid, 0, GRID_WIDTH);
-            int y_grid = (int) boids[current].position.y / GRID_SIZE;
+            int y_grid = (int) boids[i].position.y / GRID_SIZE;
             y_grid = Wrap(y_grid, 0, GRID_HEIGHT);
             int i_grid = y_grid * GRID_WIDTH + x_grid;
 
             // Boid still in valid grid cell
-            if (i == i_grid) {
-                last = current;
-                current = boids[current].next;
+            if (cell == i_grid && !boids[i].eaten) {
+                last = i;
+                i = boids[i].next;
                 continue;
             }
 
             // We gotta move the boid from this linked list to another
             // Move to head of other linked list for simplicity
 
-            int old_next = boids[current].next;
+            int old_next = boids[i].next;
 
             // Move head
-            if (current == link_heads[i]) {
+            if (i == link_heads[cell]) {
                 // Head now points to next element
-                link_heads[i] = boids[current].next;
-
-                // Assign removed node to be new head of correct cell
-                boids[current].next = link_heads[i_grid];
-                link_heads[i_grid] = current;
-
-                // No more to check in this cell so can break
-                break;
+                link_heads[cell] = boids[i].next;
             } else {
                 // Last node point to current's next node
-                boids[last].next = boids[current].next;
-
-                // Assign removed node to be new head of correct cell
-                boids[current].next = link_heads[i_grid];
-                link_heads[i_grid] = current;
-                current = old_next;
+                boids[last].next = boids[i].next;
             }
+
+            if (!boids[i].eaten) {
+                // Assign removed node to be new head of correct cell
+                boids[i].next = link_heads[i_grid];
+                link_heads[i_grid] = i;
+            }
+            i = old_next;
         }
     }
 }

@@ -90,10 +90,12 @@ int main(void) {
     player.bugs_collected = 0;
     player.is_grounded = false;
     player.is_shifting = false;
+    player.is_eating = false;
     player.grow_x_colliding = false;
     player.grow_y_colliding = false;
 
     char keycode[50] = "KEYCODE: 0";
+    char collected[50] = "BUGS COLLECTED: 0";
 
     while (!WindowShouldClose()) {
         UpdateMusicStream(music);
@@ -126,7 +128,9 @@ int main(void) {
 
         camera.target = camera_offset;
 
+        player.is_eating = false;
         update_boids(&player, boids, link_heads, average_positions, average_directions, average_separations);
+        sprintf(collected, "BUGS COLLECTED: %d", player.bugs_collected);
 
         // RESTART
         if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads);
@@ -136,10 +140,17 @@ int main(void) {
             BeginMode2D(camera);
                 ClearBackground(BLACK);
                 // Draw player
-                DrawRectangleRec(player.aabb, player.is_shifting ? CYAN : MAGENTA);
+                Color player_colour = MAGENTA;
+                if (player.is_eating) {
+                    player_colour = YELLOW;
+                } else if (player.is_shifting) {
+                    player_colour = CYAN;
+                }
+                DrawRectangleRec(player.aabb, player_colour);
 
                 // Draw boids
                 for (int i = 0; i < NUM_BOIDS; i++) {
+                    if (boids[i].eaten) continue;
                     if (
                         boids[i].position.x < render_offset.x * CELL_SIZE ||
                         boids[i].position.x > render_offset.x * CELL_SIZE + WINDOW_WIDTH ||
@@ -188,6 +199,7 @@ int main(void) {
             EndShaderMode();
             DrawFPS(0, 0);
             DrawText(keycode, 0, 20, 20, WHITE);
+            DrawText(collected, 0, 40, 20, YELLOW);
         EndDrawing();
     }
 
@@ -218,6 +230,7 @@ void restart(Player *player, Boid *boids, int *link_heads) {
     player->shift_buffer_left = 0.0f;
     player->is_grounded = false;
     player->is_shifting = false;
+    player->is_eating = false;
     player->grow_x_colliding = false;
     player->grow_y_colliding = false;
 
