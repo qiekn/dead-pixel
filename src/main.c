@@ -59,7 +59,7 @@ int main(void) {
     player.keybinds[B] = 75;
     player.keybinds[RESTART] = 82;
     player.aabb = (Rectangle){
-        100, WINDOW_CENTRE.y,
+        4000, 2000,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player.vel = Vector2Zero();

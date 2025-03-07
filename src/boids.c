@@ -132,11 +132,10 @@ void update_boids(
         }
     }
 
-    Vector2 player_pos = (Vector2) {player->aabb.x, player->aabb.y};
+    Vector2 player_pos = (Vector2) {player->aabb.x + player->aabb.width / 2, player->aabb.y + player->aabb.height / 2};
     float largest_dimension = player->aabb.width;
     if (player->aabb.height > largest_dimension) largest_dimension = player->aabb.height;
     largest_dimension *= PLAYER_AVOID_FACTOR;
-    float run_radius_squared = largest_dimension * largest_dimension;
 
     // Move the boids
     for (int i = 0; i < NUM_BOIDS; i++) {
@@ -151,8 +150,9 @@ void update_boids(
 
         // Avoidance
         float distance_sqr = Vector2DistanceSqr(boids[i].position, player_pos);
+        float distance = Vector2Distance(boids[i].position, player_pos);
         Vector2 avoidance = Vector2Zero();
-        if (distance_sqr < run_radius_squared) {
+        if (distance < largest_dimension) {
             avoidance = Vector2Scale(Vector2Subtract(boids[i].position, player_pos), 1.0f / distance_sqr * AVOIDANCE_CONSTANT);
         }
 

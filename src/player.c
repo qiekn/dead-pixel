@@ -177,11 +177,11 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
         hit = rect_collision(player->aabb, level);
         if (!Vector2Equals(hit, Vector2Zero())) {
             if (player->vel.y > 0) {
-                player->aabb.y = hit.y * CELL_SIZE - player->aabb.height - 1 - SMOL;
+                player->aabb.y = hit.y * CELL_SIZE - player->aabb.height - SMOL;
                 player->is_grounded = true;
             }
             else if (player->vel.y < 0) {
-                player->aabb.y = (hit.y + 1) * CELL_SIZE + 1 + SMOL;
+                player->aabb.y = (hit.y + 1) * CELL_SIZE + SMOL;
             }
             player->vel.y = 0;
         }
