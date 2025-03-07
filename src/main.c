@@ -1,7 +1,6 @@
 #include "raylib.h"
 #include "raymath.h"
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
 #include "player.h"
 #include "boids.h"
@@ -18,6 +17,7 @@ const Vector2 WINDOW_CENTRE = (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.
 int main(void) {
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
+    SetAudioStreamBufferSizeDefault(8192);
     HideCursor();
     SetTargetFPS(FPS);
     SetRandomSeed(0);  // For bug reproducability, change to be time
