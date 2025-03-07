@@ -54,8 +54,6 @@ void update_boids(
     Vector2 *average_directions,
     Vector2 *average_separations
 ) {
-    if (player->is_shifting) return;
-
     // Update Boids
     for (int i = 0; i < GRID_CELLS; i++) {
         if (link_heads[i] == -1) continue;
@@ -164,20 +162,21 @@ void update_boids(
                     boids[i].eaten = true;
                     player->is_eating = true;
                     player->bugs_collected++;
-                    // TODO: Instantiate particle here
+                    // TODO: Instantiate particle effect here
                 }
             }
 
-            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, separation));
-            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, alignment));
-            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, cohesion));
-            boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, avoidance));
+            // Update position & direction
+            if (!player->is_shifting) {
+                boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, separation));
+                boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, alignment));
+                boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, cohesion));
+                boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, avoidance));
+                boids[i].position = Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, MOVE_SPEED * FIXED_DT));
 
-            // Update position
-            boids[i].position = Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, MOVE_SPEED * FIXED_DT));
-
-            boids[i].position.x = Wrap(boids[i].position.x, 0, WORLD_WIDTH);
-            boids[i].position.y = Wrap(boids[i].position.y, 0, WORLD_HEIGHT);
+                boids[i].position.x = Wrap(boids[i].position.x, 0, WORLD_WIDTH);
+                boids[i].position.y = Wrap(boids[i].position.y, 0, WORLD_HEIGHT);
+            }
 
             // Does this boid need to move cells?
             int x_grid = (int) boids[i].position.x / GRID_SIZE;

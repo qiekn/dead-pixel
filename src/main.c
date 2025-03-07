@@ -93,7 +93,7 @@ int main(void) {
     player.shift_buffer = 0.3f;
     player.shift_buffer_left = 0.0f;
     player.bugs_collected = 0;
-    player.max_time = FPS * 30;  // FPS * Seconds
+    player.max_time = FPS * 60;  // FPS * Seconds
     player.time_remaining = player.max_time;
     player.is_grounded = false;
     player.is_shifting = false;
@@ -106,8 +106,9 @@ int main(void) {
     char timer[50] = "TIME REMAINING: 0";
 
     while (!WindowShouldClose()) {
-        float time = GetTime();
+        float time = (float) GetTime();
         SetShaderValue(shader_glitch, timeLoc, &time, SHADER_UNIFORM_FLOAT);
+
         UpdateMusicStream(music);
 
         // Update

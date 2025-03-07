@@ -1,17 +1,12 @@
 #version 330
 
-// Input vertex attributes (from vertex shader)
 in vec2 fragTexCoord;
 in vec4 fragColor;
 
-// Input uniform values
 uniform sampler2D texture0;
-uniform vec4 colDiffuse;
 
-// Output fragment color
 out vec4 finalColor;
 
-const vec2 resolution = vec2(1280, 720);
 uniform float time = 0.0;
 
 float rand(vec2 co){
@@ -19,7 +14,7 @@ float rand(vec2 co){
 }
 
 float offset(float blocks, vec2 uv) {
-	return rand(vec2(time, floor(uv.y * blocks)));
+    return rand(vec2(time, floor(uv.y * blocks)));
 }
 
 void main() {
