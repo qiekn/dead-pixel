@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "player.h"
+#include "boids.h"
 #include "level.h"
 #include "settings.h"
 
@@ -12,7 +13,6 @@ const Vector2 WINDOW_CENTRE = (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.
 
 
 int main(void) {
-    printf("%d, %d\n", MAP_WIDTH, MAP_HEIGHT);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
     HideCursor();
@@ -30,6 +30,15 @@ int main(void) {
     /*int (*level)[MAP_HEIGHT][MAP_WIDTH] = malloc(sizeof(int) * MAP_WIDTH * MAP_HEIGHT);*/
     int level[MAP_HEIGHT][MAP_WIDTH] = {0};
     if (!load_level(level)) return 1;
+
+    Boid boids[NUM_BOIDS] = {};
+    int links[NUM_BOIDS] = {};
+    int link_heads[GRID_CELLS] = {};
+    setup_list(link_heads);
+    setup_linked_list(boids, link_heads, links);
+    Vector2 average_positions[NUM_BOIDS] = {};
+    Vector2 average_directions[NUM_BOIDS] = {};
+    Vector2 average_separations[NUM_BOIDS] = {};
 
     Camera2D camera = {};
     camera.target = Vector2Zero();
@@ -108,7 +117,8 @@ int main(void) {
         };
 
         camera.target = camera_offset;
-        printf("%lf\n", level_offset.x);
+
+        update_boids(&player, boids, link_heads, links, average_positions, average_directions, average_separations);
 
         // Render to a texture for textures affected by postprocessing shaders
         BeginTextureMode(target_entities);
@@ -116,6 +126,16 @@ int main(void) {
                 ClearBackground(BLACK);
                 // Draw player
                 DrawRectangleRec(player.aabb, MAGENTA);
+
+                // Draw boids
+                for (int i = 0; i < NUM_BOIDS; i++) {
+                    /*DrawCircleLinesV(boids[i].position, VIEW_DISTANCE, GREEN);*/
+                    /*DrawCircleLinesV(boids[i].position, AVOID_DISTANCE, BLUE);*/
+                    /*DrawLineV(boids[i].position, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), BLUE);*/
+                    /*DrawCircleV(boids[i].position, BOID_SIZE, MAGENTA);*/
+                    /*DrawPixelV(boids[i].position, MAGENTA);*/
+                    DrawTriangleLines((Vector2) {boids[i].position.x - BOID_SIZE, boids[i].position.y + BOID_SIZE}, (Vector2) {boids[i].position.x + BOID_SIZE, boids[i].position.y + BOID_SIZE}, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), GREEN);
+                }
             EndMode2D();
         EndTextureMode();
 
@@ -132,9 +152,7 @@ int main(void) {
                         CELL_SIZE,
                         CELL_SIZE
                     };
-                    if (cell_type == SOLID) {
-                        DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
-                    }
+                    DrawRectangleLinesEx(cell_rect, 2.0f, BLUE);
                 }
             }
         EndTextureMode();
