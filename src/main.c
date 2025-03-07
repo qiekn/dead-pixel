@@ -88,6 +88,8 @@ int main(void) {
     player.shift_buffer = 0.3f;
     player.shift_buffer_left = 0.0f;
     player.bugs_collected = 0;
+    player.max_time = FPS * 30;  // FPS * Seconds
+    player.time_remaining = player.max_time;
     player.is_grounded = false;
     player.is_shifting = false;
     player.is_eating = false;
@@ -96,6 +98,7 @@ int main(void) {
 
     char keycode[50] = "KEYCODE: 0";
     char collected[50] = "BUGS COLLECTED: 0";
+    char timer[50] = "TIME REMAINING: 0";
 
     while (!WindowShouldClose()) {
         UpdateMusicStream(music);
@@ -104,7 +107,10 @@ int main(void) {
         int keycode_pressed = GetKeyPressed();
         if (keycode_pressed) sprintf(keycode, "KEYCODE: %d", keycode_pressed);
 
-        player_update(&player, level);
+        if (player.time_remaining > 0) {
+            player_update(&player, level);
+            update_boids(&player, boids, link_heads, average_positions, average_directions, average_separations);
+        }
 
         Vector2 player_centre = (Vector2) {
             player.aabb.x + player.aabb.width / 2,
@@ -125,12 +131,11 @@ int main(void) {
             level_offset.x * WINDOW_WIDTH,
             level_offset.y * WINDOW_HEIGHT
         };
-
         camera.target = camera_offset;
 
-        player.is_eating = false;
-        update_boids(&player, boids, link_heads, average_positions, average_directions, average_separations);
         sprintf(collected, "BUGS COLLECTED: %d", player.bugs_collected);
+
+        sprintf(timer, "TIME REMAINING: %d", player.time_remaining);
 
         // RESTART
         if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads);
@@ -139,15 +144,6 @@ int main(void) {
         BeginTextureMode(target_entities);
             BeginMode2D(camera);
                 ClearBackground(BLACK);
-                // Draw player
-                Color player_colour = MAGENTA;
-                if (player.is_eating) {
-                    player_colour = YELLOW;
-                } else if (player.is_shifting) {
-                    player_colour = CYAN;
-                }
-                DrawRectangleRec(player.aabb, player_colour);
-
                 // Draw boids
                 for (int i = 0; i < NUM_BOIDS; i++) {
                     if (boids[i].eaten) continue;
@@ -168,6 +164,15 @@ int main(void) {
                         GREEN
                     );
                 }
+
+                // Draw player
+                Color player_colour = MAGENTA;
+                if (player.is_eating) {
+                    player_colour = YELLOW;
+                } else if (player.is_shifting) {
+                    player_colour = CYAN;
+                }
+                DrawRectangleRec(player.aabb, player_colour);
             EndMode2D();
         EndTextureMode();
 
@@ -200,6 +205,7 @@ int main(void) {
             DrawFPS(0, 0);
             DrawText(keycode, 0, 20, 20, WHITE);
             DrawText(collected, 0, 40, 20, YELLOW);
+            DrawText(timer, 0, 60, 20, MAGENTA);
         EndDrawing();
     }
 
@@ -228,6 +234,7 @@ void restart(Player *player, Boid *boids, int *link_heads) {
     player->coyote_time_left = 0.0f;
     player->jump_buffer_left = 0.0f;
     player->shift_buffer_left = 0.0f;
+    player->time_remaining = player->max_time;
     player->is_grounded = false;
     player->is_shifting = false;
     player->is_eating = false;

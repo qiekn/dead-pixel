@@ -48,6 +48,8 @@ typedef struct {
     float shift_buffer;
     float shift_buffer_left;
     int bugs_collected;
+    int max_time;
+    int time_remaining;
     bool is_grounded;
     bool is_shifting;
     bool is_eating;

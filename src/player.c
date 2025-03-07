@@ -6,6 +6,9 @@
 
 
 void player_update(Player *player, int *level) {
+    player->is_eating = false;
+    player->time_remaining--;
+
     bool jump_pressed = IsKeyPressed(player->keybinds[A]);
     bool jump_held = IsKeyDown(player->keybinds[A]);
     bool shift_pressed = IsKeyPressed(player->keybinds[B]);
