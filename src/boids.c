@@ -25,7 +25,11 @@ void setup_linked_list(Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int li
         boids[i] = (Boid) {position, direction};
 
         int x_grid = (int) position.x / GRID_SIZE;
+        x_grid = Wrap(x_grid, 0, GRID_WIDTH);
+
         int y_grid = (int) position.y / GRID_SIZE;
+        y_grid = Wrap(y_grid, 0, GRID_HEIGHT);
+
         int i_grid = y_grid * GRID_WIDTH + x_grid;
 
         if (link_heads[i_grid] == -1) {
@@ -48,6 +52,8 @@ void update_boids(
     Vector2 average_directions[NUM_BOIDS],
     Vector2 average_separations[NUM_BOIDS]
 ) {
+    if (player->is_shifting) return;
+
     // Update Boids
     for (int i = 0; i < GRID_CELLS; i++) {
         if (link_heads[i] == -1) continue;
@@ -56,7 +62,9 @@ void update_boids(
         while (current != -1) {
             // Calculate surrounding grid cells
             int x_grid = (int) boids[current].position.x / GRID_SIZE;
+            x_grid = Wrap(x_grid, 0, GRID_WIDTH);
             int y_grid = (int) boids[current].position.y / GRID_SIZE;
+            y_grid = Wrap(y_grid, 0, GRID_HEIGHT);
 
             int remaining_x = (int) boids[current].position.x - x_grid * GRID_SIZE;
             int remaining_y = (int) boids[current].position.y - y_grid * GRID_SIZE;
@@ -154,7 +162,7 @@ void update_boids(
         boids[i].direction = Vector2Normalize(Vector2Add(boids[i].direction, avoidance));
 
         // Update position
-        boids[i].position = Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, MOVE_SPEED));
+        boids[i].position = Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, MOVE_SPEED * FIXED_DT));
 
         boids[i].position.x = Wrap(boids[i].position.x, 0, WORLD_WIDTH);
         boids[i].position.y = Wrap(boids[i].position.y, 0, WORLD_HEIGHT);
@@ -167,7 +175,9 @@ void update_boids(
         int current = link_heads[i];
         while (current != -1) {
             int x_grid = (int) boids[current].position.x / GRID_SIZE;
+            x_grid = Wrap(x_grid, 0, GRID_WIDTH);
             int y_grid = (int) boids[current].position.y / GRID_SIZE;
+            y_grid = Wrap(y_grid, 0, GRID_HEIGHT);
             int i_grid = y_grid * GRID_WIDTH + x_grid;
 
             // Boid still in valid grid cell

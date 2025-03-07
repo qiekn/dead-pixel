@@ -45,6 +45,8 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
     if (shift_pressed) player->shift_buffer_left = player->shift_buffer;
     else if (player->shift_buffer_left > 0) player->shift_buffer_left -= FIXED_DT;
 
+    player->is_shifting = shift_held;
+
     if (shift_held) {
         player->vel = Vector2Zero();
         if (input_dir.x != 0) {

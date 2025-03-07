@@ -9,6 +9,9 @@
 #include "settings.h"
 
 
+#define CYAN (Color){ 0, 255, 255, 255 }
+
+
 const Vector2 WINDOW_CENTRE = (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f};
 
 
@@ -17,6 +20,7 @@ int main(void) {
     InitAudioDevice();
     HideCursor();
     SetTargetFPS(FPS);
+    SetRandomSeed(0);  // For bug reproducability, change to be time
 
     Music music = LoadMusicStream("src/resources/Tron Legacy - Son of Flynn (Remix).ogg");
     PlayMusicStream(music);
@@ -62,8 +66,8 @@ int main(void) {
     player.max_vel = (Vector2){200.0f, 400.0f};
     player.min_vel = Vector2Negate(player.max_vel);
     player.last_grow_direction = Vector2Zero();
-    player.max_width = CELL_SIZE * 8.0f - 1.0f;
-    player.max_height = CELL_SIZE * 8.0f - 1.0f;
+    player.max_width = CELL_SIZE * 20.0f - 1.0f;
+    player.max_height = CELL_SIZE * 20.0f - 1.0f;
     player.grow_speed = 200.0f;
     player.speed = 800.0f;
     player.friction = 0.00001f;  // Between 0 - 1, higher means lower friction
@@ -82,6 +86,7 @@ int main(void) {
     player.shift_buffer_left = 0.0f;
     player.bugs_collected = 0;
     player.is_grounded = false;
+    player.is_shifting = false;
     player.grow_x_colliding = false;
     player.grow_y_colliding = false;
 
@@ -125,15 +130,20 @@ int main(void) {
             BeginMode2D(camera);
                 ClearBackground(BLACK);
                 // Draw player
-                DrawRectangleRec(player.aabb, MAGENTA);
+                DrawRectangleRec(player.aabb, player.is_shifting ? CYAN : MAGENTA);
 
                 // Draw boids
                 for (int i = 0; i < NUM_BOIDS; i++) {
+                    if (
+                        boids[i].position.x < render_offset.x * CELL_SIZE ||
+                        boids[i].position.x > render_offset.x * CELL_SIZE + WINDOW_WIDTH ||
+                        boids[i].position.y < render_offset.y * CELL_SIZE ||
+                        boids[i].position.y > render_offset.y * CELL_SIZE + WINDOW_HEIGHT
+                    ) continue;
                     /*DrawCircleLinesV(boids[i].position, VIEW_DISTANCE, GREEN);*/
                     /*DrawCircleLinesV(boids[i].position, AVOID_DISTANCE, BLUE);*/
                     /*DrawLineV(boids[i].position, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), BLUE);*/
                     /*DrawCircleV(boids[i].position, BOID_SIZE, MAGENTA);*/
-                    /*DrawPixelV(boids[i].position, MAGENTA);*/
                     DrawTriangleLines((Vector2) {boids[i].position.x - BOID_SIZE, boids[i].position.y + BOID_SIZE}, (Vector2) {boids[i].position.x + BOID_SIZE, boids[i].position.y + BOID_SIZE}, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), GREEN);
                 }
             EndMode2D();
