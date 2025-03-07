@@ -28,7 +28,7 @@ void restart(Player *player, Boid *boids, int *link_heads);
 
 
 int main(void) {
-    GameStates current_state = STATE_UPGRADE;
+    GameStates current_state = STATE_GAME;
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
@@ -168,7 +168,6 @@ int main(void) {
             if (keycode_pressed) sprintf(keycode, "KEYCODE: %d", keycode_pressed);
 
             sprintf(collected, "BUGS COLLECTED: %d", player.bugs_collected);
-
             sprintf(timer, "TIME REMAINING: %d", player.time_remaining);
 
             // RESTART

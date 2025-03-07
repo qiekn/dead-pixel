@@ -7,11 +7,11 @@
 #include "settings.h"
 
 
-static const int NUM_BOIDS = 2048 * 4;
-static const float BOID_SIZE = 5;
+static const int NUM_BOIDS = 2048 * 2;
+static const float BOID_SIZE = 6;
 static const int VIEW_DISTANCE = 64;
 static const int VIEW_DISTANCE_SQR = (VIEW_DISTANCE * VIEW_DISTANCE);
-static const int AVOID_DISTANCE = 7;
+static const int AVOID_DISTANCE = 12;
 static const int AVOID_DISTANCE_SQR = (AVOID_DISTANCE * AVOID_DISTANCE);
 static const float VIEW_DOT_PRODUCT = -0.6;
 static const float SEPARATION_CONSTANT = 0.3;
