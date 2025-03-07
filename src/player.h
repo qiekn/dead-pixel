@@ -6,8 +6,10 @@
 #include "settings.h"
 
 
+// TODO: Oh gosh these need to be const
 #define SMOL 0.01f
 #define MIN_PLAYER_SIZE (CELL_SIZE - 4.0f)
+
 #define MAX_KEYBINDS 7
 
 

@@ -66,8 +66,8 @@ int main(void) {
     player.max_vel = (Vector2){200.0f, 400.0f};
     player.min_vel = Vector2Negate(player.max_vel);
     player.last_grow_direction = Vector2Zero();
-    player.max_width = CELL_SIZE * 20.0f - 1.0f;
-    player.max_height = CELL_SIZE * 20.0f - 1.0f;
+    player.max_width = LEVEL_WIDTH - 1.0f;
+    player.max_height = LEVEL_HEIGHT - 1.0f;
     player.grow_speed = 200.0f;
     player.speed = 800.0f;
     player.friction = 0.00001f;  // Between 0 - 1, higher means lower friction
@@ -125,7 +125,8 @@ int main(void) {
 
         update_boids(&player, boids, link_heads, links, average_positions, average_directions, average_separations);
 
-        // RESTART IF PRESSED
+
+        // RESTART
         if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads, links);
 
 
