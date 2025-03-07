@@ -54,6 +54,7 @@ typedef struct {
     bool is_grounded;
     bool is_shifting;
     bool is_eating;
+    bool is_maxxed_out;
     bool grow_x_colliding;
     bool grow_y_colliding;
 } Player;

@@ -15,10 +15,21 @@
 
 #define WINDOW_CENTRE (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f}
 
+
+typedef enum {
+    STATE_GAME,
+    STATE_UPGRADE,
+    STATE_RELOAD,
+    STATE_GAMEOVER,
+} GameStates;
+
+
 void restart(Player *player, Boid *boids, int *link_heads);
 
 
 int main(void) {
+    GameStates current_state = STATE_UPGRADE;
+
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
     SetAudioStreamBufferSizeDefault(8192);
@@ -31,6 +42,15 @@ int main(void) {
 
     Music music = LoadMusicStream("src/resources/Tron Legacy - Son of Flynn (Remix).ogg");
     PlayMusicStream(music);
+
+    Font font_c64 = LoadFont("src/resources/C64_Pro-STYLE.ttf");
+
+    Mesh cubeMesh = GenMeshCube(1, 1, 1);
+    Model cubeModel = LoadModelFromMesh(cubeMesh);
+    /*cubeModel.materials[0].maps[MATERIAL_MAP_ALBEDO].texture = texture;*/
+    Camera camera3D = { { 0.0f, 10.0f, 10.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f }, 45.0f, CAMERA_PERSPECTIVE };
+    camera3D.fovy = 10.0f;
+    camera3D.projection = CAMERA_ORTHOGRAPHIC;
 
     Shader shader_scanlines = LoadShader(0, TextFormat("src/resources/shaders%i/scanlines.fs", GLSL_VERSION));
     Shader shader_blur = LoadShader(0, TextFormat("src/resources/shaders%i/blur.fs", GLSL_VERSION));
@@ -73,8 +93,10 @@ int main(void) {
     player.max_vel = (Vector2){200.0f, 400.0f};
     player.min_vel = Vector2Negate(player.max_vel);
     player.last_grow_direction = Vector2Zero();
-    player.max_width = WINDOW_WIDTH - 4.0f;
-    player.max_height = WINDOW_HEIGHT - 4.0f;
+    player.max_width = CELL_SIZE * 4.0f - 4.0f;
+    player.max_height = CELL_SIZE * 4.0f - 4.0f;
+    /*player.max_width = MAX_PLAYER_WIDTH;*/
+    /*player.max_height = MAX_PLAYER_HEIGHT;*/
     player.grow_speed_max = 400.0f;
     player.grow_speed_min = 100.0f;
     player.speed = 800.0f;
@@ -98,129 +120,184 @@ int main(void) {
     player.is_grounded = false;
     player.is_shifting = false;
     player.is_eating = false;
+    player.is_maxxed_out = false;
     player.grow_x_colliding = false;
     player.grow_y_colliding = false;
 
     char keycode[50] = "KEYCODE: 0";
     char collected[50] = "BUGS COLLECTED: 0";
     char timer[50] = "TIME REMAINING: 0";
+    char controls[200] = "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart";
+    float time;
 
     while (!WindowShouldClose()) {
-        float time = (float) GetTime();
+        time = (float) GetTime();
         SetShaderValue(shader_glitch, timeLoc, &time, SHADER_UNIFORM_FLOAT);
-
         UpdateMusicStream(music);
 
-        // Update
-        int keycode_pressed = GetKeyPressed();
-        if (keycode_pressed) sprintf(keycode, "KEYCODE: %d", keycode_pressed);
+        switch (current_state) {
+        case STATE_GAME:
+            // Update
+            if (player.time_remaining > 0) {
+                player_update(&player, level);
+                update_boids(&player, boids, link_heads, average_positions, average_directions, average_separations);
+            }
 
-        if (player.time_remaining > 0) {
-            player_update(&player, level);
-            update_boids(&player, boids, link_heads, average_positions, average_directions, average_separations);
-        }
+            Vector2 player_centre = (Vector2) {
+                player.aabb.x + player.aabb.width / 2,
+                player.aabb.y + player.aabb.height / 2
+            };
 
-        Vector2 player_centre = (Vector2) {
-            player.aabb.x + player.aabb.width / 2,
-            player.aabb.y + player.aabb.height / 2
-        };
+            Vector2 level_offset = (Vector2) {
+                (int)(player_centre.x / WINDOW_WIDTH),
+                (int)(player_centre.y / WINDOW_HEIGHT)
+            };
 
-        Vector2 level_offset = (Vector2) {
-            (int)(player_centre.x / WINDOW_WIDTH),
-            (int)(player_centre.y / WINDOW_HEIGHT)
-        };
+            Vector2 render_offset = (Vector2) {
+                level_offset.x * LEVEL_WIDTH,
+                level_offset.y * LEVEL_HEIGHT
+            };
 
-        Vector2 render_offset = (Vector2) {
-            level_offset.x * LEVEL_WIDTH,
-            level_offset.y * LEVEL_HEIGHT
-        };
+            Vector2 camera_offset = (Vector2) {
+                level_offset.x * WINDOW_WIDTH,
+                level_offset.y * WINDOW_HEIGHT
+            };
+            camera.target = camera_offset;
 
-        Vector2 camera_offset = (Vector2) {
-            level_offset.x * WINDOW_WIDTH,
-            level_offset.y * WINDOW_HEIGHT
-        };
-        camera.target = camera_offset;
+            int keycode_pressed = GetKeyPressed();
+            if (keycode_pressed) sprintf(keycode, "KEYCODE: %d", keycode_pressed);
 
-        sprintf(collected, "BUGS COLLECTED: %d", player.bugs_collected);
+            sprintf(collected, "BUGS COLLECTED: %d", player.bugs_collected);
 
-        sprintf(timer, "TIME REMAINING: %d", player.time_remaining);
+            sprintf(timer, "TIME REMAINING: %d", player.time_remaining);
 
-        // RESTART
-        if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads);
+            // RESTART
+            if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads);
 
-        // Render to a texture for textures affected by postprocessing shaders
-        BeginTextureMode(target_entities);
-            BeginMode2D(camera);
+            // Render to a texture for textures affected by postprocessing shaders
+            BeginTextureMode(target_entities);
                 ClearBackground(BLACK);
-                // Draw boids
-                for (int i = 0; i < NUM_BOIDS; i++) {
-                    if (boids[i].eaten) continue;
-                    if (
-                        boids[i].position.x < render_offset.x * CELL_SIZE ||
-                        boids[i].position.x > render_offset.x * CELL_SIZE + WINDOW_WIDTH ||
-                        boids[i].position.y < render_offset.y * CELL_SIZE ||
-                        boids[i].position.y > render_offset.y * CELL_SIZE + WINDOW_HEIGHT
-                    ) continue;
-                    /*DrawCircleLinesV(boids[i].position, VIEW_DISTANCE, GREEN);*/
-                    /*DrawCircleLinesV(boids[i].position, AVOID_DISTANCE, BLUE);*/
-                    /*DrawLineV(boids[i].position, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), BLUE);*/
-                    /*DrawCircleV(boids[i].position, BOID_SIZE, MAGENTA);*/
-                    DrawTriangleLines(
-                        Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)),
-                        (Vector2) {boids[i].position.x - BOID_SIZE, boids[i].position.y + BOID_SIZE},
-                        (Vector2) {boids[i].position.x + BOID_SIZE, boids[i].position.y + BOID_SIZE},
-                        BOID_COLOUR
+                BeginMode2D(camera);
+                    // Draw boids
+                    for (int i = 0; i < NUM_BOIDS; i++) {
+                        if (boids[i].eaten) continue;
+                        if (
+                            boids[i].position.x < render_offset.x * CELL_SIZE ||
+                            boids[i].position.x > render_offset.x * CELL_SIZE + WINDOW_WIDTH ||
+                            boids[i].position.y < render_offset.y * CELL_SIZE ||
+                            boids[i].position.y > render_offset.y * CELL_SIZE + WINDOW_HEIGHT
+                        ) continue;
+                        /*DrawCircleLinesV(boids[i].position, VIEW_DISTANCE, GREEN);*/
+                        /*DrawCircleLinesV(boids[i].position, AVOID_DISTANCE, BLUE);*/
+                        /*DrawLineV(boids[i].position, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), BLUE);*/
+                        /*DrawCircleV(boids[i].position, BOID_SIZE, MAGENTA);*/
+                        DrawTriangleLines(
+                            Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)),
+                            (Vector2) {boids[i].position.x - BOID_SIZE, boids[i].position.y + BOID_SIZE},
+                            (Vector2) {boids[i].position.x + BOID_SIZE, boids[i].position.y + BOID_SIZE},
+                            BOID_COLOUR
+                        );
+                    }
+
+                    // Draw player
+                    Color player_colour = MAGENTA;
+                    if (player.is_eating) {
+                        player_colour = YELLOW;
+                    } else if (player.is_shifting) {
+                        player_colour = CYAN;
+                    }
+                    DrawRectangleRec(player.aabb, player_colour);
+                EndMode2D();
+            EndTextureMode();
+
+            BeginTextureMode(target_world);
+                ClearBackground(BLACK);
+                // Draw level
+                for (int y = 0; y < LEVEL_HEIGHT; y++) {
+                    for (int x = 0; x < LEVEL_WIDTH; x++) {
+                        int cell_type = level[(int)((y + render_offset.y) * MAP_WIDTH + x + render_offset.x)];
+                        if (cell_type == EMPTY) continue;
+                        Rectangle cell_rect = {
+                            x * CELL_SIZE,
+                            y * CELL_SIZE,
+                            CELL_SIZE,
+                            CELL_SIZE
+                        };
+                        DrawRectangleLinesEx(cell_rect, 2.0f, WALL_COLOUR);
+                    }
+                }
+            EndTextureMode();
+
+            BeginDrawing();
+                ClearBackground(BLACK);
+                if (player.time_remaining < TIME_REMAINING_GLITCH) {
+                    BeginShaderMode(shader_glitch);
+                        DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                    EndShaderMode();
+                } else {
+                    BeginShaderMode(shader_blur);
+                        DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                    EndShaderMode();
+                }
+                BeginShaderMode(shader_scanlines);
+                    DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
+                EndShaderMode();
+                DrawFPS(0, 0);
+                DrawText(keycode, 0, 20, 20, WHITE);
+                DrawText(collected, 0, 40, 20, YELLOW);
+                DrawText(timer, 0, 60, 20, MAGENTA);
+            EndDrawing();
+            break;
+
+        case STATE_UPGRADE:
+            BeginTextureMode(target_entities);
+                ClearBackground(BLACK);
+                BeginMode3D(camera3D);
+                    DrawModelEx(
+                        cubeModel,
+                        (Vector3){0, 0, 0},
+                        (Vector3){0.2f, 0.8f, 0.1f},
+                        time * 100.0f,
+                        (Vector3){player.max_width / 100, player.max_height / 100, player.max_height / 100},
+                        MAGENTA
                     );
+                    /*DrawModelWiresEx(cubeModel, (Vector3){0, 0, 0}, (Vector3){0, 1.0f, 0}, time*10, (Vector3){1.0f, 1.0f, 1.0f}, WHITE);*/
+                    /*DrawCubeV(Vector3Zero(), (Vector3){1, 1, 1}, WHITE);*/
+                    /*DrawCubeWiresV(Vector3Zero(), (Vector3){1, 1, 1}, MAGENTA);*/
+                EndMode3D();
+            EndTextureMode();
+
+            BeginTextureMode(target_world);
+                ClearBackground(BLACK);
+                DrawTextEx(font_c64, controls, (Vector2){10, 250}, 16, 0.0f, WHITE);
+            EndTextureMode();
+
+            BeginDrawing();
+                if (player.is_maxxed_out) {
+                    BeginShaderMode(shader_glitch);
+                        DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                    EndShaderMode();
+                } else {
+                    BeginShaderMode(shader_blur);
+                        DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                    EndShaderMode();
                 }
 
-                // Draw player
-                Color player_colour = MAGENTA;
-                if (player.is_eating) {
-                    player_colour = YELLOW;
-                } else if (player.is_shifting) {
-                    player_colour = CYAN;
-                }
-                DrawRectangleRec(player.aabb, player_colour);
-            EndMode2D();
-        EndTextureMode();
-
-        BeginTextureMode(target_world);
-            ClearBackground(BLACK);
-            // Draw level
-            for (int y = 0; y < LEVEL_HEIGHT; y++) {
-                for (int x = 0; x < LEVEL_WIDTH; x++) {
-                    int cell_type = level[(int)((y + render_offset.y) * MAP_WIDTH + x + render_offset.x)];
-                    if (cell_type == EMPTY) continue;
-                    Rectangle cell_rect = {
-                        x * CELL_SIZE,
-                        y * CELL_SIZE,
-                        CELL_SIZE,
-                        CELL_SIZE
-                    };
-                    DrawRectangleLinesEx(cell_rect, 2.0f, WALL_COLOUR);
-                }
-            }
-        EndTextureMode();
-
-        BeginDrawing();
-            ClearBackground(BLACK);
-            if (player.time_remaining < TIME_REMAINING_GLITCH) {
-                BeginShaderMode(shader_glitch);
-                    DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                BeginShaderMode(shader_scanlines);
+                    DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
                 EndShaderMode();
-            } else {
-                BeginShaderMode(shader_blur);
-                    DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
-                EndShaderMode();
-            }
-            BeginShaderMode(shader_scanlines);
-                DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
-            EndShaderMode();
-            DrawFPS(0, 0);
-            DrawText(keycode, 0, 20, 20, WHITE);
-            DrawText(collected, 0, 40, 20, YELLOW);
-            DrawText(timer, 0, 60, 20, MAGENTA);
-        EndDrawing();
+            EndDrawing();
+            break;
+
+        case STATE_GAMEOVER:
+            break;
+
+        case STATE_RELOAD:
+            break;
+
+        }
+        continue;
+
     }
 
     // De-Initialization
