@@ -5,24 +5,25 @@
 #include "player.h"
 
 
-void setup_list(int link_heads[GRID_CELLS]) {
+void setup_list(int *link_heads) {
     // Setting up boids lists
     for (int i = 0; i < GRID_CELLS; i++) {
         link_heads[i] = -1;
     }
 }
 
-void setup_linked_list(Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int links[NUM_BOIDS]) {
+
+void setup_linked_list(Boid *boids, int *link_heads) {
     for (int i = 0; i < NUM_BOIDS; i++) {
         Vector2 position = (Vector2) {
-            GetRandomValue(CELL_SIZE, MAP_WIDTH - CELL_SIZE) * CELL_SIZE,
-            GetRandomValue(CELL_SIZE, MAP_WIDTH - CELL_SIZE) * CELL_SIZE
+            GetRandomValue(2, MAP_WIDTH - 2) * CELL_SIZE,
+            GetRandomValue(2, MAP_HEIGHT - 2) * CELL_SIZE
         };
         Vector2 direction = Vector2Normalize((Vector2) {
             GetRandomValue(-64, 64),
             GetRandomValue(-64, 64)
         });
-        boids[i] = (Boid) {position, direction};
+        boids[i] = (Boid) {position, direction, -1};
 
         int x_grid = (int) position.x / GRID_SIZE;
         x_grid = Wrap(x_grid, 0, GRID_WIDTH);
@@ -32,25 +33,24 @@ void setup_linked_list(Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int li
 
         int i_grid = y_grid * GRID_WIDTH + x_grid;
 
+        // There is no head of the list for this grid cell
         if (link_heads[i_grid] == -1) {
             link_heads[i_grid] = i;
-            links[i] = -1;
         } else {
-            // Insert at head because easier
-            links[i] = link_heads[i_grid];
+            boids[i].next = link_heads[i_grid];
             link_heads[i_grid] = i;
         }
     }
 }
 
+
 void update_boids(
     Player *player,
-    Boid boids[NUM_BOIDS],
-    int link_heads[GRID_CELLS],
-    int links[NUM_BOIDS],
-    Vector2 average_positions[NUM_BOIDS],
-    Vector2 average_directions[NUM_BOIDS],
-    Vector2 average_separations[NUM_BOIDS]
+    Boid *boids,
+    int *link_heads,
+    Vector2 *average_positions,
+    Vector2 *average_directions,
+    Vector2 *average_separations
 ) {
     if (player->is_shifting) return;
 
@@ -95,17 +95,17 @@ void update_boids(
                     int inside = link_heads[cell_to_check];
                     while ((inside != -1)) {
                         if (inside == current) {
-                            inside = links[inside];
+                            inside = boids[inside].next;
                             continue;
                         }
 
                         float distance_sqr = Vector2DistanceSqr(boids[current].position, boids[inside].position);
                         if (distance_sqr > VIEW_DISTANCE_SQR) {
-                            inside = links[inside];
+                            inside = boids[inside].next;
                             continue;
                         }
                         if (Vector2DotProduct(boids[current].position, boids[inside].position) < VIEW_DOT_PRODUCT) {
-                            inside = links[inside];
+                            inside = boids[inside].next;
                             continue;
                         }
                         average_position = Vector2Add(average_position, boids[inside].position);
@@ -113,13 +113,13 @@ void update_boids(
                         count++;
 
                         if (distance_sqr > AVOID_DISTANCE_SQR) {
-                            inside = links[inside];
+                            inside = boids[inside].next;
                             continue;
                         }
                         average_separation = Vector2Subtract(average_separation, Vector2Scale(Vector2Subtract(boids[current].position, boids[inside].position), 1.0f / distance_sqr));
                         separation_count++;
 
-                        inside = links[inside];
+                        inside = boids[inside].next;
                     }
                 }
             }
@@ -128,7 +128,7 @@ void update_boids(
             average_directions[current] = Vector2Normalize(Vector2Scale(average_direction, 1.0f / count));
             average_separations[current] = Vector2Normalize(Vector2Scale(average_separation, 1.0f / separation_count));
 
-            current = links[current];
+            current = boids[current].next;
         }
     }
 
@@ -172,6 +172,7 @@ void update_boids(
     for (int i = 0; i < GRID_CELLS; i++) {
         if (link_heads[i] == -1) continue;
 
+        int last = -1;
         int current = link_heads[i];
         while (current != -1) {
             int x_grid = (int) boids[current].position.x / GRID_SIZE;
@@ -182,34 +183,35 @@ void update_boids(
 
             // Boid still in valid grid cell
             if (i == i_grid) {
-                current = links[current];
+                last = current;
+                current = boids[current].next;
                 continue;
             }
 
             // We gotta move the boid from this linked list to another
             // Move to head of other linked list for simplicity
 
+            int old_next = boids[current].next;
+
             // Move head
             if (current == link_heads[i]) {
-                link_heads[i] = links[current];
+                // Head now points to next element
+                link_heads[i] = boids[current].next;
 
-                // Current points to new head
-                links[current] = link_heads[i_grid];
-                // Head is now current of correct grid cell
+                // Assign removed node to be new head of correct cell
+                boids[current].next = link_heads[i_grid];
                 link_heads[i_grid] = current;
 
-                current = link_heads[i];
+                // No more to check in this cell so can break
+                break;
             } else {
-                int old = links[current];
-                // Patch up link, set current to be next
-                links[current] = links[old];
+                // Last node point to current's next node
+                boids[last].next = boids[current].next;
 
-                // Redundant link points to new head, -1 is fine.
-                links[old] = link_heads[i_grid];
-                // Head is now current of correct grid cell
-                link_heads[i_grid] = old;
-
-                current = links[current];
+                // Assign removed node to be new head of correct cell
+                boids[current].next = link_heads[i_grid];
+                link_heads[i_grid] = current;
+                current = old_next;
             }
         }
     }

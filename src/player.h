@@ -6,9 +6,10 @@
 #include "settings.h"
 
 
-// TODO: Oh gosh these need to be const
-#define SMOL 0.01f
-#define MIN_PLAYER_SIZE (CELL_SIZE - 4.0f)
+static const float SMOL = 0.01f;
+static const int MIN_PLAYER_SIZE = (CELL_SIZE - 4.0f);
+static const int MAX_PLAYER_WIDTH = (WINDOW_WIDTH - 4.0f);
+static const int MAX_PLAYER_HEIGHT = (WINDOW_HEIGHT - 4.0f);
 
 #define MAX_KEYBINDS 7
 
@@ -32,7 +33,8 @@ typedef struct {
     Vector2 last_grow_direction;
     float max_width;
     float max_height;
-    float grow_speed;
+    float grow_speed_max;
+    float grow_speed_min;
     float speed;
     float friction;
     float gravity;
@@ -53,8 +55,8 @@ typedef struct {
 } Player;
 
 
-void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]);
-Vector2 rect_collision(Rectangle aabb, int level[MAP_HEIGHT][MAP_WIDTH]);
+void player_update(Player *player, int *level);
+Vector2 rect_collision(Rectangle aabb, int *level);
 
 
 #endif  /* PLAYER_H */

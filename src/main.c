@@ -1,7 +1,8 @@
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "raylib.h"
 #include "raymath.h"
-#include <stdbool.h>
-#include <stdio.h>
 #include "player.h"
 #include "boids.h"
 #include "level.h"
@@ -11,7 +12,7 @@
 #define CYAN (Color) {0, 255, 255, 255}
 #define WINDOW_CENTRE (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f}
 
-void restart(Player *player, Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int links[NUM_BOIDS]);
+void restart(Player *player, Boid *boids, int *link_heads);
 
 
 int main(void) {
@@ -20,7 +21,10 @@ int main(void) {
     SetAudioStreamBufferSizeDefault(8192);
     HideCursor();
     SetTargetFPS(FPS);
-    SetRandomSeed(0);  // For bug reproducability, change to be time
+
+    // Set to zero for easy bug reproducability.
+    // TODO: Change to be time for final build
+    SetRandomSeed(0);
 
     Music music = LoadMusicStream("src/resources/Tron Legacy - Son of Flynn (Remix).ogg");
     PlayMusicStream(music);
@@ -31,18 +35,16 @@ int main(void) {
     RenderTexture2D target_entities = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
     RenderTexture2D target_world = LoadRenderTexture(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    /*int (*level)[MAP_HEIGHT][MAP_WIDTH] = malloc(sizeof(int) * MAP_WIDTH * MAP_HEIGHT);*/
-    int level[MAP_HEIGHT][MAP_WIDTH] = {0};
+    int *level = (int *)malloc(sizeof(int) * MAP_WIDTH * MAP_HEIGHT);
     if (!load_level(level)) return 1;
 
-    Boid boids[NUM_BOIDS] = {};
-    int links[NUM_BOIDS] = {};
-    int link_heads[GRID_CELLS] = {};
+    Boid *boids = (Boid *)malloc(sizeof(Boid) * NUM_BOIDS);
+    int *link_heads = (int *)malloc(sizeof(int) * GRID_CELLS);
     setup_list(link_heads);
-    setup_linked_list(boids, link_heads, links);
-    Vector2 average_positions[NUM_BOIDS] = {};
-    Vector2 average_directions[NUM_BOIDS] = {};
-    Vector2 average_separations[NUM_BOIDS] = {};
+    setup_linked_list(boids, link_heads);
+    Vector2 *average_positions = (Vector2 *)malloc(sizeof(Vector2) * NUM_BOIDS);
+    Vector2 *average_directions = (Vector2 *)malloc(sizeof(Vector2) * NUM_BOIDS);
+    Vector2 *average_separations = (Vector2 *)malloc(sizeof(Vector2) * NUM_BOIDS);
 
     Camera2D camera = {};
     camera.target = Vector2Zero();
@@ -66,9 +68,10 @@ int main(void) {
     player.max_vel = (Vector2){200.0f, 400.0f};
     player.min_vel = Vector2Negate(player.max_vel);
     player.last_grow_direction = Vector2Zero();
-    player.max_width = 20 * CELL_SIZE - 1.0f;
-    player.max_height = 20 * CELL_SIZE - 1.0f;
-    player.grow_speed = 200.0f;
+    player.max_width = WINDOW_WIDTH - 4.0f;
+    player.max_height = WINDOW_HEIGHT - 4.0f;
+    player.grow_speed_max = 400.0f;
+    player.grow_speed_min = 100.0f;
     player.speed = 800.0f;
     player.friction = 0.00001f;  // Between 0 - 1, higher means lower friction
     float min_jump = CELL_SIZE * 1.5f;
@@ -123,12 +126,10 @@ int main(void) {
 
         camera.target = camera_offset;
 
-        update_boids(&player, boids, link_heads, links, average_positions, average_directions, average_separations);
-
+        update_boids(&player, boids, link_heads, average_positions, average_directions, average_separations);
 
         // RESTART
-        if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads, links);
-
+        if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads);
 
         // Render to a texture for textures affected by postprocessing shaders
         BeginTextureMode(target_entities);
@@ -149,7 +150,12 @@ int main(void) {
                     /*DrawCircleLinesV(boids[i].position, AVOID_DISTANCE, BLUE);*/
                     /*DrawLineV(boids[i].position, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), BLUE);*/
                     /*DrawCircleV(boids[i].position, BOID_SIZE, MAGENTA);*/
-                    DrawTriangleLines((Vector2) {boids[i].position.x - BOID_SIZE, boids[i].position.y + BOID_SIZE}, (Vector2) {boids[i].position.x + BOID_SIZE, boids[i].position.y + BOID_SIZE}, Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)), GREEN);
+                    DrawTriangleLines(
+                        Vector2Add(boids[i].position, Vector2Scale(boids[i].direction, AVOID_DISTANCE)),
+                        (Vector2) {boids[i].position.x - BOID_SIZE, boids[i].position.y + BOID_SIZE},
+                        (Vector2) {boids[i].position.x + BOID_SIZE, boids[i].position.y + BOID_SIZE},
+                        GREEN
+                    );
                 }
             EndMode2D();
         EndTextureMode();
@@ -159,7 +165,7 @@ int main(void) {
             // Draw level
             for (int y = 0; y < LEVEL_HEIGHT; y++) {
                 for (int x = 0; x < LEVEL_WIDTH; x++) {
-                    int cell_type = level[(int)(y + render_offset.y)][(int)(x + render_offset.x)];
+                    int cell_type = level[(int)((y + render_offset.y) * MAP_WIDTH + x + render_offset.x)];
                     if (cell_type == EMPTY) continue;
                     Rectangle cell_rect = {
                         x * CELL_SIZE,
@@ -186,6 +192,12 @@ int main(void) {
     }
 
     // De-Initialization
+    free(level);
+    free(boids);
+    free(link_heads);
+    free(average_positions);
+    free(average_directions);
+    free(average_separations);
     UnloadShader(shader_scanlines);
     UnloadRenderTexture(target_entities);
     UnloadMusicStream(music);
@@ -194,7 +206,7 @@ int main(void) {
     CloseWindow();
 }
 
-void restart(Player *player, Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int links[NUM_BOIDS]) {
+void restart(Player *player, Boid *boids, int *link_heads) {
     player->aabb = (Rectangle){
         WINDOW_CENTRE.x, WINDOW_CENTRE.y,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
@@ -210,5 +222,5 @@ void restart(Player *player, Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], 
     player->grow_y_colliding = false;
 
     setup_list(link_heads);
-    setup_linked_list(boids, link_heads, links);
+    setup_linked_list(boids, link_heads);
 }

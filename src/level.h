@@ -12,7 +12,7 @@ typedef enum {
 } CellType;
 
 
-bool load_level(int level[MAP_HEIGHT][MAP_WIDTH]);
+bool load_level(int *level);
 bool inside_map(int x, int y);
 
 

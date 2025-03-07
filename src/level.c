@@ -3,7 +3,7 @@
 #include "settings.h"
 
 
-bool load_level(int level[MAP_HEIGHT][MAP_WIDTH]) {
+bool load_level(int *level) {
     FILE* file_ptr = fopen("src/resources/map.txt", "r");
 
     if (file_ptr == NULL) {
@@ -16,7 +16,7 @@ bool load_level(int level[MAP_HEIGHT][MAP_WIDTH]) {
     int y = 0;
     int cell_type;
     while (fscanf(file_ptr, "%d", &cell_type) == 1 && y < MAP_HEIGHT) {
-        level[y][x] = cell_type;
+        level[y * MAP_WIDTH + x] = cell_type;
         x++;
         if (fgetc(file_ptr) == '\n' || x >= MAP_WIDTH) {
             x = 0;

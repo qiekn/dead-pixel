@@ -7,45 +7,45 @@
 #include "settings.h"
 
 
-// TODO: Oh gosh these need to be const
-#define NUM_BOIDS 1024
-#define BOID_SIZE 6
-#define VIEW_DISTANCE 64
-#define VIEW_DISTANCE_SQR (VIEW_DISTANCE * VIEW_DISTANCE)
-#define AVOID_DISTANCE 16
-#define AVOID_DISTANCE_SQR (AVOID_DISTANCE * AVOID_DISTANCE)
-#define VIEW_DOT_PRODUCT -0.6
-#define SEPARATION_CONSTANT 0.3
-#define ALIGNMENT_CONSTANT 0.01
-#define COHESION_CONSTANT 0.03
-#define AVOIDANCE_CONSTANT 4
-#define MOVE_SPEED 120
+static const int NUM_BOIDS = 2048 * 8;
+static const int BOID_SIZE = 6;
+static const int VIEW_DISTANCE = 64;
+static const int VIEW_DISTANCE_SQR = (VIEW_DISTANCE * VIEW_DISTANCE);
+static const int AVOID_DISTANCE = 16;
+static const int AVOID_DISTANCE_SQR = (AVOID_DISTANCE * AVOID_DISTANCE);
+static const float VIEW_DOT_PRODUCT = -0.6;
+static const float SEPARATION_CONSTANT = 0.3;
+static const float ALIGNMENT_CONSTANT = 0.01;
+static const float COHESION_CONSTANT = 0.03;
+static const int AVOIDANCE_CONSTANT = 4;
+static const int MOVE_SPEED = 120;
 
-#define PLAYER_AVOID_FACTOR 4
+static const int PLAYER_AVOID_FACTOR = 4;
 
-#define GRID_HALF_SIZE VIEW_DISTANCE
-#define GRID_SIZE (GRID_HALF_SIZE * 2)
-#define GRID_WIDTH (WORLD_WIDTH / GRID_SIZE)
-#define GRID_HEIGHT (WORLD_HEIGHT / GRID_SIZE)
-#define GRID_CELLS (GRID_WIDTH * GRID_HEIGHT)
+static const int GRID_HALF_SIZE = VIEW_DISTANCE;
+static const int GRID_SIZE = (GRID_HALF_SIZE * 2);
+static const int GRID_WIDTH = (WORLD_WIDTH / GRID_SIZE);
+static const int GRID_HEIGHT = (WORLD_HEIGHT / GRID_SIZE);
+static const int GRID_CELLS = (GRID_WIDTH * GRID_HEIGHT);
 
 
 typedef struct {
     Vector2 position;
     Vector2 direction;
+    int next;
 } Boid;
 
 
-void setup_list(int link_heads[GRID_CELLS]);
-void setup_linked_list(Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int links[NUM_BOIDS]);
+void setup_list(int *link_heads);
+void setup_linked_list(Boid *boids, int *link_heads);
 void update_boids(
     Player *player,
-    Boid boids[NUM_BOIDS],
-    int link_heads[GRID_CELLS],
-    int links[NUM_BOIDS],
-    Vector2 average_positions[NUM_BOIDS],
-    Vector2 average_directions[NUM_BOIDS],
-    Vector2 average_separations[NUM_BOIDS]
+    Boid *boids,
+    int *link_heads,
+    Vector2 *average_positions,
+    Vector2 *average_directions,
+    Vector2 *average_separations
 );
+
 
 #endif  /* BOIDS_H */

@@ -5,7 +5,7 @@
 #include "level.h"
 
 
-void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
+void player_update(Player *player, int *level) {
     bool jump_pressed = IsKeyPressed(player->keybinds[A]);
     bool jump_held = IsKeyDown(player->keybinds[A]);
     bool shift_pressed = IsKeyPressed(player->keybinds[B]);
@@ -57,9 +57,10 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
             int grow = player->grow_x_colliding ? -1 : 1;
             player->last_grow_direction.x = input_dir.x;
 
+            float grow_speed = player->aabb.width / MAX_PLAYER_WIDTH * player->grow_speed_max + player->grow_speed_min;
             float old_x = player->aabb.x;
             float old_width = player->aabb.width;
-            float new_width = old_width + grow * player->grow_speed * FIXED_DT;
+            float new_width = old_width + grow * grow_speed * FIXED_DT;
             new_width = Clamp(new_width, MIN_PLAYER_SIZE, player->max_width + 1);
             float grow_difference = new_width - old_width;
 
@@ -91,9 +92,10 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
             int grow = player->grow_y_colliding ? -1 : 1;
             player->last_grow_direction.y = input_dir.y;
 
+            float grow_speed = player->aabb.height / MAX_PLAYER_HEIGHT * player->grow_speed_max + player->grow_speed_min;
             float old_y = player->aabb.y;
             float old_height = player->aabb.height;
-            float new_height = old_height + grow * player->grow_speed * FIXED_DT;
+            float new_height = old_height + grow * grow_speed * FIXED_DT;
             new_height = Clamp(new_height, MIN_PLAYER_SIZE, player->max_height + 1);
             float grow_difference = new_height - old_height;
 
@@ -188,7 +190,7 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
     }
 }
 
-Vector2 rect_collision(Rectangle aabb, int level[MAP_HEIGHT][MAP_WIDTH]) {
+Vector2 rect_collision(Rectangle aabb, int *level) {
     float top_left_x = aabb.x / CELL_SIZE;
     float bottom_right_x = (aabb.x + aabb.width) / CELL_SIZE;
     float top_left_y = aabb.y / CELL_SIZE;
@@ -196,7 +198,7 @@ Vector2 rect_collision(Rectangle aabb, int level[MAP_HEIGHT][MAP_WIDTH]) {
     for (int y = top_left_y; y <= bottom_right_y; y++) {
         for (int x = top_left_x; x <= bottom_right_x; x++) {
             if (!inside_map(x, y)) return (Vector2) {x, y};
-            int cell_type = level[y][x];
+            int cell_type = level[y * MAP_WIDTH + x];
             if (cell_type == EMPTY) continue;
             return (Vector2) {x, y};
         }
