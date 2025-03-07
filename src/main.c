@@ -8,10 +8,10 @@
 #include "settings.h"
 
 
-#define CYAN (Color){ 0, 255, 255, 255 }
+#define CYAN (Color) {0, 255, 255, 255}
+#define WINDOW_CENTRE (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f}
 
-
-const Vector2 WINDOW_CENTRE = (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f};
+void restart(Player *player, Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int links[NUM_BOIDS]);
 
 
 int main(void) {
@@ -60,7 +60,7 @@ int main(void) {
     player.keybinds[RESTART] = 82;
     player.aabb = (Rectangle){
         WINDOW_CENTRE.x, WINDOW_CENTRE.y,
-        CELL_SIZE * 4.0f - 1.0f, CELL_SIZE * 4.0f - 1.0f
+        MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player.vel = Vector2Zero();
     player.max_vel = (Vector2){200.0f, 400.0f};
@@ -125,6 +125,10 @@ int main(void) {
 
         update_boids(&player, boids, link_heads, links, average_positions, average_directions, average_separations);
 
+        // RESTART IF PRESSED
+        if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads, links);
+
+
         // Render to a texture for textures affected by postprocessing shaders
         BeginTextureMode(target_entities);
             BeginMode2D(camera);
@@ -187,4 +191,23 @@ int main(void) {
     CloseAudioDevice();
 
     CloseWindow();
+}
+
+void restart(Player *player, Boid boids[NUM_BOIDS], int link_heads[GRID_CELLS], int links[NUM_BOIDS]) {
+    player->aabb = (Rectangle){
+        WINDOW_CENTRE.x, WINDOW_CENTRE.y,
+        MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
+    };
+    player->vel = Vector2Zero();
+    player->last_grow_direction = Vector2Zero();
+    player->coyote_time_left = 0.0f;
+    player->jump_buffer_left = 0.0f;
+    player->shift_buffer_left = 0.0f;
+    player->is_grounded = false;
+    player->is_shifting = false;
+    player->grow_x_colliding = false;
+    player->grow_y_colliding = false;
+
+    setup_list(link_heads);
+    setup_linked_list(boids, link_heads, links);
 }
