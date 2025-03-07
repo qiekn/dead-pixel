@@ -30,5 +30,5 @@ bool load_level(int level[MAP_HEIGHT][MAP_WIDTH]) {
 
 
 bool inside_map(int x, int y) {
-    return (x >= 0 && x < MAP_WIDTH && y >= 0 && y < MAP_HEIGHT);
+    return (x > 0 && x < MAP_WIDTH && y > 0 && y < MAP_HEIGHT);
 }

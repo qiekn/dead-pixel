@@ -8,7 +8,7 @@
 
 
 // TODO: Oh gosh these need to be const
-#define NUM_BOIDS (4096 * 4)
+#define NUM_BOIDS 1024
 #define BOID_SIZE 6
 #define VIEW_DISTANCE 64
 #define VIEW_DISTANCE_SQR (VIEW_DISTANCE * VIEW_DISTANCE)

@@ -60,7 +60,7 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
             float old_x = player->aabb.x;
             float old_width = player->aabb.width;
             float new_width = old_width + grow * player->grow_speed * FIXED_DT;
-            new_width = Clamp(new_width, MIN_PLAYER_SIZE, player->max_width + CELL_SIZE);
+            new_width = Clamp(new_width, MIN_PLAYER_SIZE, player->max_width + 1);
             float grow_difference = new_width - old_width;
 
             player->aabb.width = new_width;
@@ -94,7 +94,7 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
             float old_y = player->aabb.y;
             float old_height = player->aabb.height;
             float new_height = old_height + grow * player->grow_speed * FIXED_DT;
-            new_height = Clamp(new_height, MIN_PLAYER_SIZE, player->max_height + CELL_SIZE);
+            new_height = Clamp(new_height, MIN_PLAYER_SIZE, player->max_height + 1);
             float grow_difference = new_height - old_height;
 
             player->aabb.height = new_height;
@@ -162,10 +162,10 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
         Vector2 hit = rect_collision(player->aabb, level);
         if (!Vector2Equals(hit, Vector2Zero())) {
             if (player->vel.x > 0) {
-                player->aabb.x = hit.x * CELL_SIZE - player->aabb.width - SMOL;
+                player->aabb.x = hit.x * CELL_SIZE - player->aabb.width - 1 - SMOL;
             }
-            else if (player->vel.x < 0) {
-                player->aabb.x = (hit.x + 1) * CELL_SIZE + SMOL;
+            else {
+                player->aabb.x = (hit.x + 1) * CELL_SIZE + 1 + SMOL;
             }
             player->vel.x = 0;
         }
@@ -177,11 +177,11 @@ void player_update(Player *player, int level[MAP_HEIGHT][MAP_WIDTH]) {
         hit = rect_collision(player->aabb, level);
         if (!Vector2Equals(hit, Vector2Zero())) {
             if (player->vel.y > 0) {
-                player->aabb.y = hit.y * CELL_SIZE - player->aabb.height - SMOL;
+                player->aabb.y = hit.y * CELL_SIZE - player->aabb.height - 1 - SMOL;
                 player->is_grounded = true;
             }
             else if (player->vel.y < 0) {
-                player->aabb.y = (hit.y + 1) * CELL_SIZE + SMOL;
+                player->aabb.y = (hit.y + 1) * CELL_SIZE + 1 + SMOL;
             }
             player->vel.y = 0;
         }
@@ -195,7 +195,7 @@ Vector2 rect_collision(Rectangle aabb, int level[MAP_HEIGHT][MAP_WIDTH]) {
     float bottom_right_y = (aabb.y + aabb.height) / CELL_SIZE;
     for (int y = top_left_y; y <= bottom_right_y; y++) {
         for (int x = top_left_x; x <= bottom_right_x; x++) {
-            if (!inside_map(x, y)) continue;
+            if (!inside_map(x, y)) return (Vector2) {x, y};
             int cell_type = level[y][x];
             if (cell_type == EMPTY) continue;
             return (Vector2) {x, y};

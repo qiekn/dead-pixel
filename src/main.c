@@ -59,15 +59,15 @@ int main(void) {
     player.keybinds[B] = 75;
     player.keybinds[RESTART] = 82;
     player.aabb = (Rectangle){
-        WINDOW_CENTRE.x, WINDOW_CENTRE.y,
+        100, WINDOW_CENTRE.y,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player.vel = Vector2Zero();
     player.max_vel = (Vector2){200.0f, 400.0f};
     player.min_vel = Vector2Negate(player.max_vel);
     player.last_grow_direction = Vector2Zero();
-    player.max_width = LEVEL_WIDTH - 1.0f;
-    player.max_height = LEVEL_HEIGHT - 1.0f;
+    player.max_width = 20 * CELL_SIZE - 1.0f;
+    player.max_height = 20 * CELL_SIZE - 1.0f;
     player.grow_speed = 200.0f;
     player.speed = 800.0f;
     player.friction = 0.00001f;  // Between 0 - 1, higher means lower friction
