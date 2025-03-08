@@ -50,8 +50,7 @@ int main(void) {
     PlayMusicStream(music);
 
     Font font_c64 = LoadFont("src/resources/C64_Pro-STYLE.ttf");
-    Font font_opensans = LoadFontEx("src/resources/OpenSans-Light.ttf", 32, NULL, 255);
-    Font font_opensans_big = LoadFontEx("src/resources/OpenSans-Light.ttf", 128, NULL, 255);
+    Font font_opensans = LoadFontEx("src/resources/OpenSans-Light.ttf", 256, NULL, 255);
 
     Mesh cubeMesh = GenMeshCube(1, 1, 1);
     Model cubeModel = LoadModelFromMesh(cubeMesh);
@@ -467,13 +466,28 @@ int main(void) {
             break;
 
         case STATE_GAMEOVER:
-            BeginDrawing();
-                ClearBackground(BLUE);
-                DrawTextEx(font_opensans_big, ":)", (Vector2){100, 140}, 128, 1, WHITE);
+            BeginTextureMode(target_world);
+                ClearBackground(CRASH_BLUE);
+                DrawTextEx(font_c64, "DEAD PIXEL", (Vector2) {162, 440}, 16, 0, WALL_COLOUR);
+            EndTextureMode();
+
+            BeginTextureMode(target_entities);
+                ClearBackground(BLACK);
+                DrawTextEx(font_opensans, ":)", (Vector2){100, 70}, 256, 1, WHITE);
                 DrawTextEx(
-                    font_opensans,
-                    "Your PC ran into a problem...\n\nThe DEAD PIXEL has grown too strong and has now\ncorrupted your entire hard drive. We're just collecting some\nerror info, and then you'll need to reinstall your operating system.\n\n\n100% complete\nCongratulations on completing the game!",
-                    (Vector2){100, 300}, 32, 1, WHITE);
+                    font_c64,
+                    "Your PC ran into a problem...\n\nThe           has grown too strong and has now\ncorrupted your entire hard drive. We're just collecting some\nerror info, and then you'll need to reinstall your operating system.\n\n\n100% Complete\nCongratulations!",
+                    (Vector2){100, 405}, 16, 0, WHITE
+                );
+            EndTextureMode();
+
+            BeginDrawing();
+                BeginShaderMode(shader_glitch);
+                    DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                EndShaderMode();
+                BeginShaderMode(shader_scanlines);
+                    DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
+                EndShaderMode();
             EndDrawing();
             break;
         }
@@ -503,7 +517,7 @@ void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAG
 
 void reset_game(Player *player, Boid *boids, int *link_heads) {
     player->aabb = (Rectangle){
-        100, 550,
+        4000, 2000,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player->vel = Vector2Zero();
