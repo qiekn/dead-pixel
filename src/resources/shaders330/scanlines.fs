@@ -16,5 +16,5 @@ void main()
 
     vec4 texelColor = texture(texture0, fragTexCoord);
 
-    finalColor = mix(vec4(0.1, 0.0, 0.1, 0.0), texelColor, wavePos);
+    finalColor = mix(vec4(0.05, 0.0, 0.05, 0.0), texelColor, wavePos);
 }

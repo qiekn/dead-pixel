@@ -12,7 +12,7 @@
 #define CRASH_BLUE (Color) {16, 10, 209, 255}
 #define CYAN (Color) {0, 255, 255, 255}
 #define WALL_COLOUR (Color) {90, 150, 255, 255}
-#define BOID_COLOUR (Color) {120, 255, 80, 150}
+#define BOID_COLOUR (Color) {10, 255, 0, 150}
 
 #define WINDOW_CENTRE (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f}
 
@@ -29,7 +29,7 @@ void restart(Player *player, Boid *boids, int *link_heads);
 
 
 int main(void) {
-    GameStates current_state = STATE_GAMEOVER;
+    GameStates current_state = STATE_GAME;
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
@@ -180,6 +180,20 @@ int main(void) {
             BeginTextureMode(target_entities);
                 ClearBackground(BLACK);
                 BeginMode2D(camera);
+                    // Draw player
+                    Color player_colour = MAGENTA;
+                    if (player.is_eating) {
+                        player_colour = YELLOW;
+                    } else if (player.is_shifting) {
+                        player_colour = CYAN;
+                    }
+                    DrawRectangleRec(player.aabb, player_colour);
+                EndMode2D();
+            EndTextureMode();
+
+            BeginTextureMode(target_world);
+                ClearBackground(BLACK);
+                BeginMode2D(camera);
                     // Draw boids
                     for (int i = 0; i < NUM_BOIDS; i++) {
                         if (boids[i].eaten) continue;
@@ -200,20 +214,8 @@ int main(void) {
                             BOID_COLOUR
                         );
                     }
-
-                    // Draw player
-                    Color player_colour = MAGENTA;
-                    if (player.is_eating) {
-                        player_colour = YELLOW;
-                    } else if (player.is_shifting) {
-                        player_colour = CYAN;
-                    }
-                    DrawRectangleRec(player.aabb, player_colour);
                 EndMode2D();
-            EndTextureMode();
 
-            BeginTextureMode(target_world);
-                ClearBackground(BLACK);
                 // Draw level
                 for (int y = 0; y < LEVEL_HEIGHT; y++) {
                     for (int x = 0; x < LEVEL_WIDTH; x++) {
@@ -225,7 +227,9 @@ int main(void) {
                             CELL_SIZE,
                             CELL_SIZE
                         };
-                        DrawRectangleLinesEx(cell_rect, 2.0f, WALL_COLOUR);
+                        /*DrawRectangleLinesEx(cell_rect, 2.0f, WALL_COLOUR);*/
+                        DrawRectangleRec(cell_rect, BLACK);
+                        DrawRectangleRoundedLinesEx(cell_rect, 0.2f, 0, 2.0f, WALL_COLOUR);
                     }
                 }
             EndTextureMode();
@@ -248,6 +252,7 @@ int main(void) {
                 DrawText(keycode, 0, 20, 20, WHITE);
                 DrawText(collected, 0, 40, 20, YELLOW);
                 DrawText(timer, 0, 60, 20, MAGENTA);
+                DrawRectangleLinesEx((Rectangle) {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 2.0f, BLACK);
             EndDrawing();
             break;
 

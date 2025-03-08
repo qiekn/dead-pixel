@@ -7,7 +7,7 @@
 #include "settings.h"
 
 
-static const int NUM_BOIDS = 2048 * 2;
+static const int NUM_BOIDS = 2048;
 static const float BOID_SIZE = 6;
 static const int VIEW_DISTANCE = 64;
 static const int VIEW_DISTANCE_SQR = (VIEW_DISTANCE * VIEW_DISTANCE);
