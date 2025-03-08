@@ -9,6 +9,7 @@
 #include "settings.h"
 
 
+#define CRASH_BLUE (Color) {16, 10, 209, 255}
 #define CYAN (Color) {0, 255, 255, 255}
 #define WALL_COLOUR (Color) {90, 150, 255, 255}
 #define BOID_COLOUR (Color) {120, 255, 80, 150}
@@ -28,7 +29,7 @@ void restart(Player *player, Boid *boids, int *link_heads);
 
 
 int main(void) {
-    GameStates current_state = STATE_GAME;
+    GameStates current_state = STATE_GAMEOVER;
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
@@ -44,6 +45,8 @@ int main(void) {
     PlayMusicStream(music);
 
     Font font_c64 = LoadFont("src/resources/C64_Pro-STYLE.ttf");
+    Font font_opensans = LoadFontEx("src/resources/OpenSans-Light.ttf", 32, NULL, 255);
+    Font font_opensans_big = LoadFontEx("src/resources/OpenSans-Light.ttf", 128, NULL, 255);
 
     Mesh cubeMesh = GenMeshCube(1, 1, 1);
     Model cubeModel = LoadModelFromMesh(cubeMesh);
@@ -127,7 +130,7 @@ int main(void) {
     char keycode[50] = "KEYCODE: 0";
     char collected[50] = "BUGS COLLECTED: 0";
     char timer[50] = "TIME REMAINING: 0";
-    char controls[200] = "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart";
+
     float time;
 
     while (!WindowShouldClose()) {
@@ -268,7 +271,11 @@ int main(void) {
 
             BeginTextureMode(target_world);
                 ClearBackground(BLACK);
-                DrawTextEx(font_c64, controls, (Vector2){10, 250}, 16, 0.0f, WHITE);
+                DrawTextEx(
+                    font_c64,
+                    "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart",
+                    (Vector2){10, 250}, 16, 1, WHITE
+                );
             EndTextureMode();
 
             BeginDrawing();
@@ -288,15 +295,21 @@ int main(void) {
             EndDrawing();
             break;
 
-        case STATE_GAMEOVER:
-            break;
-
         case STATE_RELOAD:
             break;
 
-        }
-        continue;
+        case STATE_GAMEOVER:
+            BeginDrawing();
+                ClearBackground(BLUE);
+                DrawTextEx(font_opensans_big, ":)", (Vector2){100, 140}, 128, 1, WHITE);
+                DrawTextEx(
+                    font_opensans,
+                   "Your PC ran into a problem and needs to restart. We're\njust collecting some error info, and then you'll need to\nreload the page.\n\n\n100% complete\nCongratulations on completing the game!",
+                    (Vector2){100, 300}, 32, 1, WHITE);
+            EndDrawing();
+            break;
 
+        }
     }
 
     // De-Initialization
