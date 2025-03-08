@@ -13,7 +13,10 @@
 #define CYAN (Color) {0, 255, 255, 255}
 #define WALL_COLOUR (Color) {90, 150, 255, 255}
 #define BOID_COLOUR (Color) {10, 255, 0, 150}
+
 #define RESTART_MESSAGE_LENGTH 350
+#define UPGRADES 3
+#define UPGRADE_LEVELS 8
 
 #define WINDOW_CENTRE (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f}
 
@@ -31,7 +34,7 @@ void reset_game(Player *player, Boid *boids, int *link_heads);
 
 
 int main(void) {
-    GameStates current_state = STATE_UPGRADE;
+    GameStates current_state = STATE_RELOAD;
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
@@ -92,15 +95,17 @@ int main(void) {
     player.keybinds[RESTART] = 82;
     player.keybinds[START] = 32;
     player.aabb = (Rectangle){
-        4000, 2000,
+        100, WINDOW_CENTRE.y,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player.vel = Vector2Zero();
     player.max_vel = (Vector2){200.0f, 400.0f};
     player.min_vel = Vector2Negate(player.max_vel);
     player.last_grow_direction = Vector2Zero();
-    player.max_width = CELL_SIZE * 4.0f - 4.0f;
-    player.max_height = CELL_SIZE * 4.0f - 4.0f;
+    player.max_width = MIN_PLAYER_SIZE;
+    player.max_height = MIN_PLAYER_SIZE;
+    /*player.max_width = CELL_SIZE * 4.0f - 4.0f;*/
+    /*player.max_height = CELL_SIZE * 4.0f - 4.0f;*/
     /*player.max_width = MAX_PLAYER_WIDTH;*/
     /*player.max_height = MAX_PLAYER_HEIGHT;*/
     player.grow_speed_max = 400.0f;
@@ -121,7 +126,8 @@ int main(void) {
     player.shift_buffer = 0.3f;
     player.shift_buffer_left = 0.0f;
     player.bugs_collected = 0;
-    player.max_time = FPS * 10;  // FPS * Seconds
+    player.bugs_collected = 999999;
+    player.max_time = FPS * 60;  // FPS * Seconds
     player.time_remaining = player.max_time;
     player.is_grounded = false;
     player.is_shifting = false;
@@ -130,13 +136,21 @@ int main(void) {
     player.grow_x_colliding = false;
     player.grow_y_colliding = false;
 
-    char keycode[50] = "KEYCODE: 0";
-    char collected[50] = "BUGS COLLECTED: 0";
-    char timer[50] = "TIME REMAINING: 0";
+    /*char keycode[50] = "KEYCODE: 0";*/
+    /*char timer[50] = "TIME REMAINING: 0";*/
+    char bugs_collected_text[50];
+    char upgrades_text[100];
+    char upgrades_price_text[50];
+
     char restart_message_target[RESTART_MESSAGE_LENGTH];
     char restart_message_live[RESTART_MESSAGE_LENGTH];
     int char_index = 0;
     int delay_left = 0;
+    restart_sequence(&player, restart_message_target, restart_message_live, &char_index, &delay_left);
+
+    int upgrade_index = 0;
+    int upgrade_level[UPGRADES] = {0};
+    int upgrade_price[UPGRADE_LEVELS] = {8, 16, 32, 128, 256, 1024, 4096, 16384};
 
     float time;
 
@@ -148,7 +162,7 @@ int main(void) {
         switch (current_state) {
         case STATE_GAME:
             // Update
-            if (player.time_remaining > 0) {
+            if (player.time_remaining > 0 || player.is_maxxed_out) {
                 player_update(&player, level);
                 update_boids(&player, boids, link_heads, average_positions, average_directions, average_separations);
             }
@@ -174,16 +188,22 @@ int main(void) {
             };
             camera.target = camera_offset;
 
-            int keycode_pressed = GetKeyPressed();
-            if (keycode_pressed) sprintf(keycode, "KEYCODE: %d", keycode_pressed);
+            /*int keycode_pressed = GetKeyPressed();*/
+            /*if (keycode_pressed) sprintf(keycode, "KEYCODE: %d", keycode_pressed);*/
 
-            sprintf(collected, "BUGS COLLECTED: %d", player.bugs_collected);
-            sprintf(timer, "TIME REMAINING: %d", player.time_remaining);
+            /*sprintf(collected, "BUGS COLLECTED: %d", player.bugs_collected);*/
+            /*sprintf(timer, "TIME REMAINING: %d", player.time_remaining);*/
 
             // RESTART
-            if (IsKeyPressed(player.keybinds[RESTART]) || player.time_remaining == 0) {
+            if (IsKeyPressed(player.keybinds[RESTART]) && !player.is_maxxed_out || (player.time_remaining == 0 && !player.is_maxxed_out)) {
                 restart_sequence(&player, restart_message_target, restart_message_live, &char_index, &delay_left);
                 current_state = STATE_RELOAD;
+            }
+
+            // WIN
+            if (player.is_maxxed_out && player.aabb.width >= MAX_PLAYER_WIDTH - 10 && player.aabb.height >= MAX_PLAYER_HEIGHT - 10 && !player.is_shifting) {
+                current_state = STATE_GAMEOVER;
+                continue;
             }
 
             // Render to a texture for textures affected by postprocessing shaders
@@ -191,7 +211,7 @@ int main(void) {
                 ClearBackground(BLACK);
                 BeginMode2D(camera);
                     // Draw player
-                    Color player_colour = MAGENTA;
+                    Color player_colour = player.is_maxxed_out ? CRASH_BLUE : MAGENTA;
                     if (player.is_eating) {
                         player_colour = YELLOW;
                     } else if (player.is_shifting) {
@@ -246,7 +266,7 @@ int main(void) {
 
             BeginDrawing();
                 ClearBackground(BLACK);
-                if (player.time_remaining < TIME_REMAINING_GLITCH) {
+                if (player.time_remaining < TIME_REMAINING_GLITCH && !player.is_maxxed_out) {
                     BeginShaderMode(shader_glitch);
                         DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
                     EndShaderMode();
@@ -258,18 +278,67 @@ int main(void) {
                 BeginShaderMode(shader_scanlines);
                     DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
                 EndShaderMode();
-                DrawFPS(10, 0);
-                DrawText(keycode, 10, 20, 20, WHITE);
-                DrawText(collected, 10, 40, 20, YELLOW);
-                DrawText(timer, 10, 60, 20, MAGENTA);
+                /*DrawFPS(10, 0);*/
+                /*DrawText(keycode, 10, 20, 20, WHITE);*/
+                /*DrawText(collected, 10, 40, 20, YELLOW);*/
+                /*DrawText(timer, 10, 60, 20, MAGENTA);*/
                 DrawRectangleLinesEx((Rectangle) {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 2.0f, BLACK);
             EndDrawing();
             break;
 
         case STATE_UPGRADE:
-            if (IsKeyPressed(player.keybinds[START])) {
+            if (!player.is_maxxed_out) {
+                sprintf(upgrades_text, "WIDTH: %d\t\t[%d/%d]\n\n\nHEIGHT: %d\t\t[%d/%d]\n\n\nTIME: %d\t\t[%d/%d]", (int)player.max_width, upgrade_level[0], UPGRADE_LEVELS, (int)player.max_height, upgrade_level[1], UPGRADE_LEVELS, player.max_time, upgrade_level[2], UPGRADE_LEVELS);
+            } else {
+                sprintf(upgrades_text, "WIDTH: 999999\t\tMAX\n\n\nHEIGHT: 999999\t\tMAX\n\n\nTIME: 999999\t\tMAX");
+            }
+
+            if (IsKeyPressed(player.keybinds[UP])) {
+                upgrade_index--;
+                if (upgrade_index < 0) upgrade_index = UPGRADES - 1;
+            }
+            if (IsKeyPressed(player.keybinds[DOWN])) {
+                upgrade_index++;
+                if (upgrade_index >= UPGRADES) upgrade_index = 0;
+            }
+            if (IsKeyPressed(player.keybinds[A])) {
+                int level = upgrade_level[upgrade_index];
+                if (level < UPGRADE_LEVELS) {
+                    int price = upgrade_price[level];
+                    if (player.bugs_collected >= price) {
+                        if (upgrade_index == 0) {
+                            player.max_width *= 1.7;
+                        } else if (upgrade_index == 1) {
+                            player.max_height *= 1.5;
+                        } else {
+                            player.max_time *= 1.2;
+                        }
+                        upgrade_level[upgrade_index]++;
+                        player.bugs_collected -= price;
+
+                        // Check for maxxed
+                        if (upgrade_level[0] == UPGRADE_LEVELS && upgrade_level[1] == UPGRADE_LEVELS && upgrade_level[2] == UPGRADE_LEVELS) {
+                            player.max_width = MAX_PLAYER_WIDTH;
+                            player.max_height = MAX_PLAYER_HEIGHT;
+                            player.max_time = MAX_PLAYER_TIME;
+                            player.is_maxxed_out = true;
+                        }
+                    }
+                }
+            }
+            else if (IsKeyPressed(player.keybinds[START])) {
                 reset_game(&player, boids, link_heads);
                 current_state = STATE_GAME;
+            }
+
+            sprintf(bugs_collected_text, "BUGS COLLECTED: %d", player.bugs_collected);
+
+            int level = upgrade_level[upgrade_index];
+            if (level < UPGRADE_LEVELS) {
+                int price = upgrade_price[level];
+                sprintf(upgrades_price_text, "%d BUGS", price);
+            } else {
+                sprintf(upgrades_price_text, "CANNOT UPGRADE");
             }
 
             BeginTextureMode(target_entities);
@@ -280,8 +349,8 @@ int main(void) {
                         (Vector3){0, 0, 0},
                         (Vector3){0.2f, 0.8f, 0.1f},
                         time * 100.0f,
-                        (Vector3){player.max_width / 100, player.max_height / 100, player.max_height / 100},
-                        MAGENTA
+                        (Vector3){player.max_width / MAX_PLAYER_WIDTH * 10, player.max_height/ MAX_PLAYER_HEIGHT * 10, player.max_height / MAX_PLAYER_HEIGHT * 10},
+                        player.is_maxxed_out ? CRASH_BLUE : MAGENTA
                     );
                     /*DrawModelWiresEx(cubeModel, (Vector3){0, 0, 0}, (Vector3){0, 1.0f, 0}, time*10, (Vector3){1.0f, 1.0f, 1.0f}, WHITE);*/
                     /*DrawCubeV(Vector3Zero(), (Vector3){1, 1, 1}, WHITE);*/
@@ -289,17 +358,40 @@ int main(void) {
                 EndMode3D();
             EndTextureMode();
 
+            Rectangle selection_rect = (Rectangle) {10, upgrade_index * 77 + 290, 440, 40};
+
             BeginTextureMode(target_world);
                 ClearBackground(BLACK);
                 DrawTextEx(
                     font_c64,
-                    "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart\n\n<SPACE> To start",
-                    (Vector2){10, 500}, 16, 1, WHITE
+                    "DEAD PIXEL",
+                    (Vector2){10, 10}, 80, 1, WHITE
                 );
                 DrawTextEx(
                     font_c64,
-                    "DEAD PIXEL",
-                    (Vector2){10, 10}, 80, 1, WHITE
+                    "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart\n\n<SPACE> To start\n\n\n\n\n\n\n\n\n\n\n\n           SEBZANARDO 2025",
+                    (Vector2){850, 300}, 16, 1,
+                    GRAY
+                );
+                DrawTextEx(
+                    font_c64,
+                    upgrades_text,
+                    (Vector2){30, 300}, 24, 1,
+                    YELLOW
+                );
+                DrawTextEx(
+                    font_c64,
+                    bugs_collected_text,
+                    (Vector2){30, 550}, 16, 1,
+                    GREEN
+                );
+                DrawRectangleRoundedLinesEx(selection_rect, 0.1f, 4.0f, 4.0f, MAGENTA);
+                DrawRectangle(25, upgrade_index * 77 + 280, 220, 20, BLACK);
+                DrawTextEx(
+                    font_c64,
+                    upgrades_price_text,
+                    (Vector2){30, upgrade_index * 77 + 280}, 16, 1,
+                    GREEN
                 );
             EndTextureMode();
 
@@ -381,11 +473,10 @@ int main(void) {
                 DrawTextEx(font_opensans_big, ":)", (Vector2){100, 140}, 128, 1, WHITE);
                 DrawTextEx(
                     font_opensans,
-                   "Your PC ran into a problem and needs to restart. We're\njust collecting some error info, and then you'll need to\nreload the page.\n\n\n100% complete\nCongratulations on completing the game!",
+                    "Your PC ran into a problem and needs to restart. We're\njust collecting some error info, and then you'll need to\nreload the page.\n\n\n100% complete\nCongratulations on completing the game!",
                     (Vector2){100, 300}, 32, 1, WHITE);
             EndDrawing();
             break;
-
         }
     }
 
@@ -405,7 +496,7 @@ int main(void) {
 }
 
 void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAGE_LENGTH], char restart_message_live[RESTART_MESSAGE_LENGTH], int *char_index, int *delay_left) {
-    sprintf(restart_message_target, "SEGMENTATION FAULT (Core Dumped)\nRestarting, please wait.../DEAD-PIXEL\nFreeing unused kernel memory\n\n-\n\nINIT: version 1.0.0 booting\n\n[ OK ] Found save file\n     * MAXIMUM_WIDTH = %lf\n     * MAXIMUM_HEIGHT = %lf\n     * TIME = %d\n     * BUGS COLLECTED = %d\n\n-\n\nRestart Successful!\n\n\n\n\n\n\n\n", player->max_width == MAX_PLAYER_WIDTH ? 999999 : player->max_width, player->max_height == MAX_PLAYER_HEIGHT ?  999999 : player->max_height, player->is_maxxed_out ? 999999: player->max_time, player->bugs_collected);
+    sprintf(restart_message_target, "SEGMENTATION FAULT (Core Dumped)\nRestarting, please wait.../DEAD-PIXEL\nFreeing unused kernel memory\n\n-\n\nINIT: version 1.0.0 booting\n\n[ OK ] Found save file\n     * MAXIMUM_WIDTH = %d\n     * MAXIMUM_HEIGHT = %d\n     * TIME = %d\n     * BUGS COLLECTED = %d\n\n-\n\nRestart Successful!\n\n\n\n\n\n\n\n", player->max_width == MAX_PLAYER_WIDTH ? 999999 : (int)player->max_width, player->max_height == MAX_PLAYER_HEIGHT ?  999999 : (int)player->max_height, player->is_maxxed_out ? 999999: player->max_time, player->bugs_collected);
     sprintf(restart_message_live, "");
     *char_index = 0;
     *delay_left = 0;
@@ -413,7 +504,7 @@ void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAG
 
 void reset_game(Player *player, Boid *boids, int *link_heads) {
     player->aabb = (Rectangle){
-        WINDOW_CENTRE.x, WINDOW_CENTRE.y,
+        100, WINDOW_CENTRE.y,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player->vel = Vector2Zero();
