@@ -13,6 +13,7 @@
 #define CYAN (Color) {0, 255, 255, 255}
 #define WALL_COLOUR (Color) {90, 150, 255, 255}
 #define BOID_COLOUR (Color) {10, 255, 0, 150}
+#define RESTART_MESSAGE_LENGTH 350
 
 #define WINDOW_CENTRE (Vector2) {WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f}
 
@@ -25,11 +26,12 @@ typedef enum {
 } GameStates;
 
 
-void restart(Player *player, Boid *boids, int *link_heads);
+void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAGE_LENGTH], char restart_message_live[RESTART_MESSAGE_LENGTH], int *char_index, int *delay_left);
+void reset_game(Player *player, Boid *boids, int *link_heads);
 
 
 int main(void) {
-    GameStates current_state = STATE_GAME;
+    GameStates current_state = STATE_UPGRADE;
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "playmakers-jam");
     InitAudioDevice();
@@ -88,6 +90,7 @@ int main(void) {
     player.keybinds[A] = 74;
     player.keybinds[B] = 75;
     player.keybinds[RESTART] = 82;
+    player.keybinds[START] = 32;
     player.aabb = (Rectangle){
         4000, 2000,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
@@ -118,7 +121,7 @@ int main(void) {
     player.shift_buffer = 0.3f;
     player.shift_buffer_left = 0.0f;
     player.bugs_collected = 0;
-    player.max_time = FPS * 60;  // FPS * Seconds
+    player.max_time = FPS * 10;  // FPS * Seconds
     player.time_remaining = player.max_time;
     player.is_grounded = false;
     player.is_shifting = false;
@@ -130,6 +133,10 @@ int main(void) {
     char keycode[50] = "KEYCODE: 0";
     char collected[50] = "BUGS COLLECTED: 0";
     char timer[50] = "TIME REMAINING: 0";
+    char restart_message_target[RESTART_MESSAGE_LENGTH];
+    char restart_message_live[RESTART_MESSAGE_LENGTH];
+    int char_index = 0;
+    int delay_left = 0;
 
     float time;
 
@@ -174,7 +181,10 @@ int main(void) {
             sprintf(timer, "TIME REMAINING: %d", player.time_remaining);
 
             // RESTART
-            if (IsKeyPressed(player.keybinds[RESTART])) restart(&player, boids, link_heads);
+            if (IsKeyPressed(player.keybinds[RESTART]) || player.time_remaining == 0) {
+                restart_sequence(&player, restart_message_target, restart_message_live, &char_index, &delay_left);
+                current_state = STATE_RELOAD;
+            }
 
             // Render to a texture for textures affected by postprocessing shaders
             BeginTextureMode(target_entities);
@@ -248,15 +258,20 @@ int main(void) {
                 BeginShaderMode(shader_scanlines);
                     DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
                 EndShaderMode();
-                DrawFPS(0, 0);
-                DrawText(keycode, 0, 20, 20, WHITE);
-                DrawText(collected, 0, 40, 20, YELLOW);
-                DrawText(timer, 0, 60, 20, MAGENTA);
+                DrawFPS(10, 0);
+                DrawText(keycode, 10, 20, 20, WHITE);
+                DrawText(collected, 10, 40, 20, YELLOW);
+                DrawText(timer, 10, 60, 20, MAGENTA);
                 DrawRectangleLinesEx((Rectangle) {0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}, 2.0f, BLACK);
             EndDrawing();
             break;
 
         case STATE_UPGRADE:
+            if (IsKeyPressed(player.keybinds[START])) {
+                reset_game(&player, boids, link_heads);
+                current_state = STATE_GAME;
+            }
+
             BeginTextureMode(target_entities);
                 ClearBackground(BLACK);
                 BeginMode3D(camera3D);
@@ -278,8 +293,13 @@ int main(void) {
                 ClearBackground(BLACK);
                 DrawTextEx(
                     font_c64,
-                    "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart",
-                    (Vector2){10, 250}, 16, 1, WHITE
+                    "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart\n\n<SPACE> To start",
+                    (Vector2){10, 500}, 16, 1, WHITE
+                );
+                DrawTextEx(
+                    font_c64,
+                    "DEAD PIXEL",
+                    (Vector2){10, 10}, 80, 1, WHITE
                 );
             EndTextureMode();
 
@@ -301,6 +321,58 @@ int main(void) {
             break;
 
         case STATE_RELOAD:
+            if (char_index < RESTART_MESSAGE_LENGTH) {
+                if (delay_left > 0) {
+                    delay_left--;
+                } else {
+                    for (int i = 0; i < 10; i++) {
+                        char c = restart_message_target[char_index];
+                        restart_message_live[char_index] = c;
+                        restart_message_live[++char_index] = '\0';
+                        if (c == '*' || c == '\n') {
+                            delay_left += 2;
+                            break;
+                        }
+                        if (c == '-') {
+                            delay_left += 10;
+                            break;
+                        }
+                    }
+                    delay_left += 2;
+                }
+            } else {
+                current_state = STATE_UPGRADE;
+            }
+
+            BeginTextureMode(target_entities);
+                ClearBackground(BLACK);
+                EndMode3D();
+            EndTextureMode();
+
+            BeginTextureMode(target_world);
+                ClearBackground(BLACK);
+                DrawTextEx(
+                    font_c64,
+                    restart_message_live,
+                    (Vector2){10, 10}, 16, 1, WHITE
+                );
+            EndTextureMode();
+
+            BeginDrawing();
+                if (char_index > RESTART_MESSAGE_LENGTH - 20) {
+                    BeginShaderMode(shader_glitch);
+                        DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                    EndShaderMode();
+                } else {
+                    BeginShaderMode(shader_blur);
+                        DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
+                    EndShaderMode();
+                }
+
+                BeginShaderMode(shader_scanlines);
+                    DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height}, (Vector2){0, 0}, WHITE);
+                EndShaderMode();
+            EndDrawing();
             break;
 
         case STATE_GAMEOVER:
@@ -332,7 +404,14 @@ int main(void) {
     CloseWindow();
 }
 
-void restart(Player *player, Boid *boids, int *link_heads) {
+void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAGE_LENGTH], char restart_message_live[RESTART_MESSAGE_LENGTH], int *char_index, int *delay_left) {
+    sprintf(restart_message_target, "SEGMENTATION FAULT (Core Dumped)\nRestarting, please wait.../DEAD-PIXEL\nFreeing unused kernel memory\n\n-\n\nINIT: version 1.0.0 booting\n\n[ OK ] Found save file\n     * MAXIMUM_WIDTH = %lf\n     * MAXIMUM_HEIGHT = %lf\n     * TIME = %d\n     * BUGS COLLECTED = %d\n\n-\n\nRestart Successful!\n\n\n\n\n\n\n\n", player->max_width == MAX_PLAYER_WIDTH ? 999999 : player->max_width, player->max_height == MAX_PLAYER_HEIGHT ?  999999 : player->max_height, player->is_maxxed_out ? 999999: player->max_time, player->bugs_collected);
+    sprintf(restart_message_live, "");
+    *char_index = 0;
+    *delay_left = 0;
+}
+
+void reset_game(Player *player, Boid *boids, int *link_heads) {
     player->aabb = (Rectangle){
         WINDOW_CENTRE.x, WINDOW_CENTRE.y,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE

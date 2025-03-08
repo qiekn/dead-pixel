@@ -12,7 +12,8 @@ static const int MAX_PLAYER_WIDTH = (WINDOW_WIDTH - 4.0f);
 static const int MAX_PLAYER_HEIGHT = (WINDOW_HEIGHT - 4.0f);
 static const int TIME_REMAINING_GLITCH = FPS * 10;
 
-#define MAX_KEYBINDS 7
+
+#define MAX_KEYBINDS 8
 
 
 typedef enum {
@@ -23,6 +24,7 @@ typedef enum {
     A,
     B,
     RESTART,
+    START,
 } Action;
 
 typedef struct {
