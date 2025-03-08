@@ -6,6 +6,7 @@ DEFAULT_PATH = "map.png"
 OUTPUT_FILEPATH = "map.txt"
 
 BLACK = (0, 0, 0, 255)
+YELLOW = (255, 255, 0, 255)
 
 
 def main() -> None:
@@ -19,6 +20,9 @@ def main() -> None:
     for y in range(image.height):
         for x in range(image.width):
             if pixels[x, y] == BLACK:
+                continue
+            if pixels[x, y] == YELLOW:
+                map[y][x] = '2'
                 continue
             map[y][x] = '1'
 

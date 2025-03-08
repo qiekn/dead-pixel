@@ -1,6 +1,8 @@
 #include "stdio.h"
 #include "stdbool.h"
+#include "raylib.h"
 #include "settings.h"
+#include "level.h"
 
 
 bool load_level(int *level) {
@@ -10,6 +12,8 @@ bool load_level(int *level) {
         printf("ERROR: Could not open file!\n");
         return false;
     }
+
+    int collect = 0;
 
     // TODO: Make this better. Load file into array and resize array???
     int x = 0;

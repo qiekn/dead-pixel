@@ -2,13 +2,18 @@
 #define LEVEL_H
 
 
+#include "raylib.h"
 #include "stdbool.h"
 #include "settings.h"
+
+
+#define VIRUS_VALUE 300
 
 
 typedef enum {
     EMPTY,
     SOLID,
+    VIRUS,
 } CellType;
 
 

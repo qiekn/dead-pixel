@@ -13,6 +13,8 @@
 #define CYAN (Color) {0, 255, 255, 255}
 #define WALL_COLOUR (Color) {90, 150, 255, 255}
 #define BOID_COLOUR (Color) {10, 255, 0, 150}
+#define MUSIC_VOLUME 0.6f
+#define MUSIC_VOLUME_QUIET 0.3f
 
 #define RESTART_MESSAGE_LENGTH 350
 #define UPGRADES 3
@@ -43,11 +45,14 @@ int main(void) {
     SetTargetFPS(FPS);
 
     // Set to zero for easy bug reproducability.
-    // TODO: Change to be time for final build
     SetRandomSeed(0);
 
     Music music = LoadMusicStream("src/resources/Tron Legacy - Son of Flynn (Remix).ogg");
+    SetMusicVolume(music, MUSIC_VOLUME);
     PlayMusicStream(music);
+
+    Sound virus_sfx = LoadSound("src/resources/virus.ogg");
+    Sound static_sfx = LoadSound("src/resources/static.ogg");
 
     Font font_c64 = LoadFont("src/resources/C64_Pro-STYLE.ttf");
     Font font_opensans = LoadFontEx("src/resources/OpenSans-Light.ttf", 256, NULL, 255);
@@ -94,7 +99,7 @@ int main(void) {
     player.keybinds[RESTART] = 82;
     player.keybinds[START] = 32;
     player.aabb = (Rectangle){
-        100, WINDOW_CENTRE.y,
+        100, 500,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player.vel = Vector2Zero();
@@ -125,8 +130,8 @@ int main(void) {
     player.shift_buffer = 0.3f;
     player.shift_buffer_left = 0.0f;
     player.bugs_collected = 0;
-    player.bugs_collected = 999999;
-    player.max_time = FPS * 60;  // FPS * Seconds
+    /*player.bugs_collected = 999999;*/
+    player.max_time = FPS * 25;  // FPS * Seconds
     player.time_remaining = player.max_time;
     player.is_grounded = false;
     player.is_shifting = false;
@@ -205,6 +210,10 @@ int main(void) {
                 continue;
             }
 
+            if (player.is_eating && !IsSoundPlaying(virus_sfx)) {
+                PlaySound(virus_sfx);
+            }
+
             // Render to a texture for textures affected by postprocessing shaders
             BeginTextureMode(target_entities);
                 ClearBackground(BLACK);
@@ -250,15 +259,19 @@ int main(void) {
                     for (int x = 0; x < LEVEL_WIDTH; x++) {
                         int cell_type = level[(int)((y + render_offset.y) * MAP_WIDTH + x + render_offset.x)];
                         if (cell_type == EMPTY) continue;
-                        Rectangle cell_rect = {
-                            x * CELL_SIZE,
-                            y * CELL_SIZE,
-                            CELL_SIZE,
-                            CELL_SIZE
-                        };
-                        /*DrawRectangleLinesEx(cell_rect, 2.0f, WALL_COLOUR);*/
-                        DrawRectangleRec(cell_rect, BLACK);
-                        DrawRectangleRoundedLinesEx(cell_rect, 0.2f, 0, 2.0f, WALL_COLOUR);
+                        if (cell_type == VIRUS) {
+                            DrawCircleLines(x * CELL_SIZE, y * CELL_SIZE, 6, YELLOW);
+                        } else {
+                            Rectangle cell_rect = {
+                                x * CELL_SIZE,
+                                y * CELL_SIZE,
+                                CELL_SIZE,
+                                CELL_SIZE
+                            };
+                            /*DrawRectangleLinesEx(cell_rect, 2.0f, WALL_COLOUR);*/
+                            DrawRectangleRec(cell_rect, BLACK);
+                            DrawRectangleRoundedLinesEx(cell_rect, 0.2f, 0, 2.0f, WALL_COLOUR);
+                        }
                     }
                 }
             EndTextureMode();
@@ -266,6 +279,9 @@ int main(void) {
             BeginDrawing();
                 ClearBackground(BLACK);
                 if ((player.time_remaining < TIME_REMAINING_GLITCH && !player.is_maxxed_out) || (player.time_remaining > player.max_time - FPS / 2 && !player.is_maxxed_out)) {
+                    if (!IsSoundPlaying(static_sfx)) {
+                        PlaySound(static_sfx);
+                    }
                     BeginShaderMode(shader_glitch);
                         DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
                     EndShaderMode();
@@ -286,6 +302,8 @@ int main(void) {
             break;
 
         case STATE_UPGRADE:
+            SetMusicVolume(music, MUSIC_VOLUME);
+
             if (!player.is_maxxed_out) {
                 sprintf(upgrades_text, "WIDTH: %d\t\t[%d/%d]\n\n\nHEIGHT: %d\t\t[%d/%d]\n\n\nTIME: %d\t\t[%d/%d]", (int)player.max_width, upgrade_level[0], UPGRADE_LEVELS, (int)player.max_height, upgrade_level[1], UPGRADE_LEVELS, player.max_time, upgrade_level[2], UPGRADE_LEVELS);
             } else {
@@ -305,15 +323,19 @@ int main(void) {
                 if (level < UPGRADE_LEVELS) {
                     int price = upgrade_price[level];
                     if (player.bugs_collected >= price) {
+                        float factor = (level+1);
+                        factor *= factor / 2;
                         if (upgrade_index == 0) {
-                            player.max_width *= 1.7;
+                            player.max_width += 7 * factor + 10;
                         } else if (upgrade_index == 1) {
-                            player.max_height *= 1.5;
+                            player.max_height += 4 * factor + 10;
                         } else {
-                            player.max_time *= 1.2;
+                            player.max_time *= 1.5;
                         }
                         upgrade_level[upgrade_index]++;
                         player.bugs_collected -= price;
+
+                        PlaySound(virus_sfx);
 
                         // Check for maxxed
                         if (upgrade_level[0] == UPGRADE_LEVELS && upgrade_level[1] == UPGRADE_LEVELS && upgrade_level[2] == UPGRADE_LEVELS) {
@@ -396,6 +418,9 @@ int main(void) {
 
             BeginDrawing();
                 if (player.is_maxxed_out) {
+                    if (!IsSoundPlaying(static_sfx)) {
+                        PlaySound(static_sfx);
+                    }
                     BeginShaderMode(shader_glitch);
                         DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
                     EndShaderMode();
@@ -412,6 +437,7 @@ int main(void) {
             break;
 
         case STATE_RELOAD:
+            SetMusicVolume(music, MUSIC_VOLUME_QUIET);
             if (char_index < RESTART_MESSAGE_LENGTH) {
                 if (delay_left > 0) {
                     delay_left--;
@@ -450,6 +476,9 @@ int main(void) {
 
             BeginDrawing();
                 if (char_index > 300) {
+                    if (!IsSoundPlaying(static_sfx)) {
+                        PlaySound(static_sfx);
+                    }
                     BeginShaderMode(shader_glitch);
                         DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
                     EndShaderMode();
@@ -466,6 +495,7 @@ int main(void) {
             break;
 
         case STATE_GAMEOVER:
+            SetMusicVolume(music, MUSIC_VOLUME_QUIET);
             BeginTextureMode(target_world);
                 ClearBackground(CRASH_BLUE);
                 DrawTextEx(font_c64, "DEAD PIXEL", (Vector2) {162, 440}, 16, 0, WALL_COLOUR);
@@ -517,7 +547,7 @@ void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAG
 
 void reset_game(Player *player, Boid *boids, int *link_heads) {
     player->aabb = (Rectangle){
-        4000, 2000,
+        144, 500,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player->vel = Vector2Zero();

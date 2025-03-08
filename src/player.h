@@ -11,7 +11,7 @@ static const int MIN_PLAYER_SIZE = (CELL_SIZE - 4.0f);
 static const int MAX_PLAYER_WIDTH = (WINDOW_WIDTH - 6.0f);
 static const int MAX_PLAYER_HEIGHT = (WINDOW_HEIGHT - 6.0f);
 static const int MAX_PLAYER_TIME = -999;
-static const int TIME_REMAINING_GLITCH = FPS * 10;
+static const int TIME_REMAINING_GLITCH = FPS * 3;
 
 
 #define MAX_KEYBINDS 8

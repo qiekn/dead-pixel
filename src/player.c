@@ -193,6 +193,23 @@ void player_update(Player *player, int *level) {
             player->vel.y = 0;
         }
     }
+
+    // Check for collision with collectables
+    float top_left_x = player->aabb.x / CELL_SIZE;
+    float bottom_right_x = (player->aabb.x + player->aabb.width) / CELL_SIZE;
+    float top_left_y = player->aabb.y / CELL_SIZE;
+    float bottom_right_y = (player->aabb.y + player->aabb.height) / CELL_SIZE;
+    for (int y = top_left_y; y <= bottom_right_y; y++) {
+        for (int x = top_left_x; x <= bottom_right_x; x++) {
+            if (!inside_map(x, y)) continue;
+            int cell_type = level[y * MAP_WIDTH + x];
+            if (cell_type == VIRUS) {
+                level[y * MAP_WIDTH + x] = EMPTY;
+                player->is_eating = true;
+                player->bugs_collected += VIRUS_VALUE;
+            }
+        }
+    }
 }
 
 Vector2 rect_collision(Rectangle aabb, int *level) {
@@ -204,8 +221,7 @@ Vector2 rect_collision(Rectangle aabb, int *level) {
         for (int x = top_left_x; x <= bottom_right_x; x++) {
             if (!inside_map(x, y)) return (Vector2) {x, y};
             int cell_type = level[y * MAP_WIDTH + x];
-            if (cell_type == EMPTY) continue;
-            return (Vector2) {x, y};
+            if (cell_type == SOLID) return (Vector2) {x, y};
         }
     }
     return Vector2Zero();
