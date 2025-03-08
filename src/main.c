@@ -390,8 +390,8 @@ int main(void) {
                 );
                 DrawTextEx(
                     font_c64,
-                    "CONTROLS:\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n<R> To manually restart\n\n<SPACE> To start\n\n\n\n\n\n\n\n\n\n\n\n           SEBZANARDO 2025",
-                    (Vector2){850, 300}, 16, 1,
+                    "CONTROLS:\n\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n    (TAP 2x) To shrink\n\n\n\n<R> To manually restart\n\n<SPACE> To start\n\n\n\n\n\n\n           SEBZANARDO 2025",
+                    (Vector2){830, 300}, 16, 1,
                     GRAY
                 );
                 DrawTextEx(
