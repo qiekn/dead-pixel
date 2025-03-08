@@ -195,7 +195,7 @@ int main(void) {
             /*sprintf(timer, "TIME REMAINING: %d", player.time_remaining);*/
 
             // RESTART
-            if (IsKeyPressed(player.keybinds[RESTART]) && !player.is_maxxed_out || (player.time_remaining == 0 && !player.is_maxxed_out)) {
+            if ((IsKeyPressed(player.keybinds[RESTART]) && !player.is_maxxed_out) || (player.time_remaining == 0 && !player.is_maxxed_out)) {
                 restart_sequence(&player, restart_message_target, restart_message_live, &char_index, &delay_left);
                 current_state = STATE_RELOAD;
             }
@@ -266,7 +266,7 @@ int main(void) {
 
             BeginDrawing();
                 ClearBackground(BLACK);
-                if (player.time_remaining < TIME_REMAINING_GLITCH && !player.is_maxxed_out) {
+                if ((player.time_remaining < TIME_REMAINING_GLITCH && !player.is_maxxed_out) || (player.time_remaining > player.max_time - FPS / 2 && !player.is_maxxed_out)) {
                     BeginShaderMode(shader_glitch);
                         DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
                     EndShaderMode();
@@ -417,20 +417,19 @@ int main(void) {
                 if (delay_left > 0) {
                     delay_left--;
                 } else {
-                    for (int i = 0; i < 10; i++) {
+                    for (int i = 0; i < 20; i++) {
                         char c = restart_message_target[char_index];
                         restart_message_live[char_index] = c;
                         restart_message_live[++char_index] = '\0';
                         if (c == '*' || c == '\n') {
-                            delay_left += 2;
                             break;
                         }
                         if (c == '-') {
-                            delay_left += 10;
+                            delay_left += 2;
                             break;
                         }
                     }
-                    delay_left += 2;
+                    delay_left += 1;
                 }
             } else {
                 current_state = STATE_UPGRADE;
@@ -451,7 +450,7 @@ int main(void) {
             EndTextureMode();
 
             BeginDrawing();
-                if (char_index > RESTART_MESSAGE_LENGTH - 20) {
+                if (char_index > 300) {
                     BeginShaderMode(shader_glitch);
                         DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height}, (Vector2){0, 0}, WHITE);
                     EndShaderMode();
@@ -473,7 +472,7 @@ int main(void) {
                 DrawTextEx(font_opensans_big, ":)", (Vector2){100, 140}, 128, 1, WHITE);
                 DrawTextEx(
                     font_opensans,
-                    "Your PC ran into a problem and needs to restart. We're\njust collecting some error info, and then you'll need to\nreload the page.\n\n\n100% complete\nCongratulations on completing the game!",
+                    "Your PC ran into a problem...\n\nThe DEAD PIXEL has grown too strong and has now\ncorrupted your entire hard drive. We're just collecting some\nerror info, and then you'll need to reinstall your operating system.\n\n\n100% complete\nCongratulations on completing the game!",
                     (Vector2){100, 300}, 32, 1, WHITE);
             EndDrawing();
             break;
@@ -496,7 +495,7 @@ int main(void) {
 }
 
 void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAGE_LENGTH], char restart_message_live[RESTART_MESSAGE_LENGTH], int *char_index, int *delay_left) {
-    sprintf(restart_message_target, "SEGMENTATION FAULT (Core Dumped)\nRestarting, please wait.../DEAD-PIXEL\nFreeing unused kernel memory\n\n-\n\nINIT: version 1.0.0 booting\n\n[ OK ] Found save file\n     * MAXIMUM_WIDTH = %d\n     * MAXIMUM_HEIGHT = %d\n     * TIME = %d\n     * BUGS COLLECTED = %d\n\n-\n\nRestart Successful!\n\n\n\n\n\n\n\n", player->max_width == MAX_PLAYER_WIDTH ? 999999 : (int)player->max_width, player->max_height == MAX_PLAYER_HEIGHT ?  999999 : (int)player->max_height, player->is_maxxed_out ? 999999: player->max_time, player->bugs_collected);
+    sprintf(restart_message_target, "SEGMENTATION FAULT (Core Dumped)\nRestarting, please wait.../DEAD-PIXEL\nFreeing unused kernel memory\n\n-\n\nINIT: version 1.0.0 booting\n\n[ OK ] Found save file\n     * MAXIMUM_WIDTH = %d\n     * MAXIMUM_HEIGHT = %d\n     * TIME = %d\n     * BUGS COLLECTED = %d\n\n-\n\nRestart Successful!\n\n---\n\n\n\n\n\n", player->max_width == MAX_PLAYER_WIDTH ? 999999 : (int)player->max_width, player->max_height == MAX_PLAYER_HEIGHT ?  999999 : (int)player->max_height, player->is_maxxed_out ? 999999: player->max_time, player->bugs_collected);
     sprintf(restart_message_live, "");
     *char_index = 0;
     *delay_left = 0;
@@ -504,7 +503,7 @@ void restart_sequence(Player *player, char restart_message_target[RESTART_MESSAG
 
 void reset_game(Player *player, Boid *boids, int *link_heads) {
     player->aabb = (Rectangle){
-        100, WINDOW_CENTRE.y,
+        100, 550,
         MIN_PLAYER_SIZE, MIN_PLAYER_SIZE
     };
     player->vel = Vector2Zero();
