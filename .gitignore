@@ -2,6 +2,8 @@
 web/
 *.zip
 
+build/
+
 # macOS specific
 .DS_Store
 raylib.h

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+make clean -C build && make -j$(nproc) -C build && ./build/game

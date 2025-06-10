@@ -1,24 +1,16 @@
-#ifndef LEVEL_H
-#define LEVEL_H
-
+#pragma once
 
 #include "raylib.h"
-#include "stdbool.h"
 #include "settings.h"
-
+#include "stdbool.h"
 
 #define VIRUS_VALUE 300
 
-
 typedef enum {
-    EMPTY,
-    SOLID,
-    VIRUS,
+  EMPTY,
+  SOLID,
+  VIRUS,
 } CellType;
-
 
 bool load_level(int *level);
 bool inside_map(int x, int y);
-
-
-#endif  /* LEVEL_H */

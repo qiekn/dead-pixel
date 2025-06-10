@@ -1,11 +1,8 @@
-#ifndef BOIDS_H
-#define BOIDS_H
+#pragma once
 
-
-#include "raylib.h"
 #include "player.h"
+#include "raylib.h"
 #include "settings.h"
-
 
 static const int NUM_BOIDS = 2048;
 static const float BOID_SIZE = 6;
@@ -28,25 +25,14 @@ static const int GRID_WIDTH = (WORLD_WIDTH / GRID_SIZE);
 static const int GRID_HEIGHT = (WORLD_HEIGHT / GRID_SIZE);
 static const int GRID_CELLS = (GRID_WIDTH * GRID_HEIGHT);
 
-
 typedef struct {
-    Vector2 position;
-    Vector2 direction;
-    int next;
-    bool eaten;
+  Vector2 position;
+  Vector2 direction;
+  int next;
+  bool eaten;
 } Boid;
-
 
 void setup_list(int *link_heads);
 void setup_linked_list(Boid *boids, int *link_heads);
-void update_boids(
-    Player *player,
-    Boid *boids,
-    int *link_heads,
-    Vector2 *average_positions,
-    Vector2 *average_directions,
-    Vector2 *average_separations
-);
-
-
-#endif  /* BOIDS_H */
+void update_boids(Player *player, Boid *boids, int *link_heads, Vector2 *average_positions, Vector2 *average_directions,
+                  Vector2 *average_separations);
