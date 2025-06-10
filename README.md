@@ -7,7 +7,8 @@ Chase bugs and collect viruses
 Grow stronger by purchasing upgrades  
 TAKE OVER THE ENTIRE SCREEN!  
 
-[PLAY (Original Author's Web Build)](https://sebzanardo.itch.io/dead-pixel)
+[PLAY (Original Author's Web Build)](https://sebzanardo.itch.io/dead-pixel)  
+[Original Author's itch page](https://sebzanardo.itch.io/dead-pixel)
 
 ## Screenshots
 
