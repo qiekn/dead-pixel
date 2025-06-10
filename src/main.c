@@ -26,10 +26,7 @@ typedef enum {
   STATE_GAMEOVER,
 } GameStates;
 
-
 int main(void) {
-  GameStates current_state = STATE_RELOAD;
-
   InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "game");
   InitAudioDevice();
   SetAudioStreamBufferSizeDefault(8192);
@@ -49,9 +46,6 @@ int main(void) {
   Font font_c64 = LoadFont("assets/C64_Pro-STYLE.ttf");
   Font font_opensans = LoadFontEx("assets/OpenSans-Light.ttf", 256, NULL, 255);
 
-  Mesh cubeMesh = GenMeshCube(1, 1, 1);
-  Model cubeModel = LoadModelFromMesh(cubeMesh);
-  /*cubeModel.materials[0].maps[MATERIAL_MAP_ALBEDO].texture = texture;*/
   Camera camera3D = {{0.0f, 10.0f, 10.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, 45.0f, CAMERA_PERSPECTIVE};
   camera3D.fovy = 10.0f;
   camera3D.projection = CAMERA_ORTHOGRAPHIC;
@@ -89,131 +83,58 @@ int main(void) {
     time = (float)GetTime();
     SetShaderValue(shader_glitch, timeLoc, &time, SHADER_UNIFORM_FLOAT);
     UpdateMusicStream(music);
+    SetMusicVolume(music, MUSIC_VOLUME);
 
-    switch (current_state) {
-      case STATE_UPGRADE:
-        TraceLog(LOG_INFO, "state upgrade / menu");
-        SetMusicVolume(music, MUSIC_VOLUME);
-        int level = upgrade_level[upgrade_index];
-        if (level < UPGRADE_LEVELS) {
-          int price = upgrade_price[level];
-          sprintf(upgrades_price_text, "%d BUGS", price);
-        } else {
-          sprintf(upgrades_price_text, "CANNOT UPGRADE");
-        }
-
-        Rectangle selection_rect = (Rectangle){10, upgrade_index * 77 + 290, 440, 40};
-
-        BeginTextureMode(target_world);
-        ClearBackground(BLACK);
-        DrawTextEx(font_c64, "DEAD PIXEL", (Vector2){10, 10}, 80, 1, WHITE);
-        DrawTextEx(font_c64,
-                   "CONTROLS:\n\n\n<WASD> To move and stretch\n\n<J> To jump and select\n\n<K> (HOLD) To stretch\n\n    (TAP 2x) To "
-                   "shrink\n\n\n\n<R> To manually restart\n\n<SPACE> To start\n\n\n\n\n\n\n           SEBZANARDO 2025",
-                   (Vector2){830, 300}, 16, 1, GRAY);
-        DrawTextEx(font_c64, upgrades_text, (Vector2){30, 300}, 24, 1, YELLOW);
-        DrawTextEx(font_c64, bugs_collected_text, (Vector2){30, 550}, 16, 1, GREEN);
-        DrawRectangleRoundedLinesEx(selection_rect, 0.1f, 4.0f, 4.0f, MAGENTA);
-        DrawRectangle(25, upgrade_index * 77 + 280, 220, 20, BLACK);
-        DrawTextEx(font_c64, upgrades_price_text, (Vector2){30, upgrade_index * 77 + 280}, 16, 1, GREEN);
-        EndTextureMode();
-
-        BeginDrawing();
-
-        BeginShaderMode(shader_scanlines);
-        DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height},
-                       (Vector2){0, 0}, WHITE);
-        EndShaderMode();
-        EndDrawing();
-        break;
-
-      case STATE_RELOAD:
-        TraceLog(LOG_INFO, "state reload");
-        SetMusicVolume(music, MUSIC_VOLUME_QUIET);
-        if (char_index < RESTART_MESSAGE_LENGTH) {
-          if (delay_left > 0) {
-            delay_left--;
-          } else {
-            for (int i = 0; i < 20; i++) {
-              char c = restart_message_target[char_index];
-              restart_message_live[char_index] = c;
-              restart_message_live[++char_index] = '\0';
-              if (c == '*' || c == '\n') {
-                break;
-              }
-              if (c == '-') {
-                delay_left += 2;
-                break;
-              }
-            }
-            delay_left += 1;
-          }
-        } else {
-          current_state = STATE_UPGRADE;
-        }
-
-        BeginTextureMode(target_entities);
-        ClearBackground(BLACK);
-        EndMode3D();
-        EndTextureMode();
-
-        BeginTextureMode(target_world);
-        ClearBackground(BLACK);
-        DrawTextEx(font_c64, restart_message_live, (Vector2){10, 10}, 16, 1, WHITE);
-        EndTextureMode();
-
-        BeginDrawing();
-        if (char_index > 300) {
-          if (!IsSoundPlaying(static_sfx)) {
-            PlaySound(static_sfx);
-          }
-          BeginShaderMode(shader_glitch);
-          DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height},
-                         (Vector2){0, 0}, WHITE);
-          EndShaderMode();
-        } else {
-          BeginShaderMode(shader_blur);
-          DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height},
-                         (Vector2){0, 0}, WHITE);
-          EndShaderMode();
-        }
-
-        BeginShaderMode(shader_scanlines);
-        DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height},
-                       (Vector2){0, 0}, WHITE);
-        EndShaderMode();
-        EndDrawing();
-        break;
-
-      case STATE_GAMEOVER:
-        TraceLog(LOG_INFO, "state gameover");
-        SetMusicVolume(music, MUSIC_VOLUME_QUIET);
-        BeginTextureMode(target_world);
-        ClearBackground(CRASH_BLUE);
-        DrawTextEx(font_c64, "DEAD PIXEL", (Vector2){162, 440}, 16, 0, WALL_COLOUR);
-        EndTextureMode();
-
-        BeginTextureMode(target_entities);
-        ClearBackground(BLACK);
-        DrawTextEx(font_opensans, ":)", (Vector2){100, 70}, 256, 1, WHITE);
-        DrawTextEx(font_c64,
-                   "Your PC ran into a problem...\n\nThe           has grown too strong and has now\ncorrupted your entire hard drive. We're just "
-                   "collecting some\nerror info, and then you'll need to reinstall your operating system.\n\n\n100% Complete\nCongratulations!",
-                   (Vector2){100, 405}, 16, 0, WHITE);
-        EndTextureMode();
-
-        BeginDrawing();
-        BeginShaderMode(shader_glitch);
-        DrawTextureRec(target_world.texture, (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height},
-                       (Vector2){0, 0}, WHITE);
-        EndShaderMode();
-        BeginShaderMode(shader_scanlines);
-        DrawTextureRec(target_entities.texture, (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height},
-                       (Vector2){0, 0}, WHITE);
-        EndShaderMode();
-        EndDrawing();
-        break;
+    int level = upgrade_level[upgrade_index];
+    if (level < UPGRADE_LEVELS) {
+      int price = upgrade_price[level];
+      sprintf(upgrades_price_text, "%d BUGS", price);
+    } else {
+      sprintf(upgrades_price_text, "CANNOT UPGRADE");
     }
+    int max_width = 10;
+    int max_height = 3;
+    int max_time = 100;
+    
+
+    sprintf(upgrades_text, "WIDTH: %d\t\t[%d/%d]\n\n\nHEIGHT: %d\t\t[%d/%d]\n\n\nTIME: %d\t\t[%d/%d]", (int)max_width, upgrade_level[0],
+                  UPGRADE_LEVELS, (int)max_height, upgrade_level[1], UPGRADE_LEVELS, max_time, upgrade_level[2], UPGRADE_LEVELS);
+    sprintf(bugs_collected_text, "BUGS COLLECTED: %d", 0);
+
+    Rectangle selection_rect = (Rectangle){10, upgrade_index * 77 + 290, 440, 40};
+
+    BeginTextureMode(target_world);
+      ClearBackground(BLACK);
+      DrawTextEx(font_c64, "DEAD PIXEL", (Vector2){10, 10}, 80, 1, WHITE);
+      DrawTextEx(font_c64,
+                 "CONTROLS:\n\n\n"
+                 "<WASD> To move and stretch\n\n"
+                 "<J> To jump and select\n\n"
+                 "<K> (HOLD) To stretch\n\n"
+                 "(TAP 2x) To shrink\n\n\n\n"
+                 "<R> To manually restart\n\n"
+                 "<SPACE> To start\n\n\n\n\n\n\n"
+                 "SEBZANARDO 2025",
+                 (Vector2){830, 300}, 16, 1, GRAY);
+      DrawTextEx(font_c64, upgrades_text, (Vector2){30, 300}, 24, 1, YELLOW);
+      DrawTextEx(font_c64, bugs_collected_text, (Vector2){30, 550}, 16, 1, GREEN);
+      DrawRectangleRoundedLinesEx(selection_rect, 0.1f, 4.0f, 4.0f, MAGENTA);
+      DrawRectangle(25, upgrade_index * 77 + 280, 220, 20, BLACK);
+      DrawTextEx(font_c64, upgrades_price_text, (Vector2){30, upgrade_index * 77 + 280}, 16, 1, GREEN);
+    EndTextureMode();
+
+    BeginDrawing();
+      BeginShaderMode(shader_blur);
+      DrawTextureRec(target_world.texture,
+                     (Rectangle){0, 0, (float)target_world.texture.width, (float)-target_world.texture.height},
+                     (Vector2){0, 0}, WHITE);
+      EndShaderMode();
+      BeginShaderMode(shader_scanlines);
+      DrawTextureRec(target_entities.texture,
+                     (Rectangle){0, 0, (float)target_entities.texture.width, (float)-target_entities.texture.height},
+                     (Vector2){0, 0}, WHITE);
+      EndShaderMode();
+    EndDrawing();
   }
 
   // De-Initialization
